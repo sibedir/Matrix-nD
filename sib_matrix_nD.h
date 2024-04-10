@@ -19,7 +19,7 @@ namespace sib {
     using dimension_t = unsigned char;
 
     template <dimension_t Dimension, std::unsigned_integral SizeType>
-    class TMultiDimSize{
+    class TMultiDimSize {
     public:
 
         //using size_type = SizeType;
