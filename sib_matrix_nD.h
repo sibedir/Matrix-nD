@@ -18,53 +18,64 @@ namespace sib {
 
     using dimension_t = unsigned char;
 
-    template <dimension_t Dimension, std::unsigned_integral SizeType>
-    class TMultiDimSize {
-    public:
 
-        //using size_type = SizeType;
-
+    template <dimension_t Dimension_, std::unsigned_integral SizeType_ = size_t>
+    class TMultiDimParam {
     private:
-
-        SizeType data[Dimension];
-
+        SizeType_ data[Dimension_];
     protected:
 
-        
+        inline void InitData(SizeType_* arr) noexcept
+        {
+            std::memcpy(data, arr, sizeof(SizeType_) * Dimension_);
+        }
+
+        template <integral_pointer size_type_ptr>
+        inline void InitData(size_type_ptr arr) noexcept(noexcept(static_cast<SizeType_>(*arr)))
+        {
+            for (dimension_t i = 0; i < Dimension_; ++i) {
+                data[i] = static_cast<SizeType_>(arr[i]);
+            }
+        }
 
     public:
-        TMultiDimSize() = delete;
+        TMultiDimParam() = delete;
 
         template <std::integral ...size_types>
-        TMultiDimSize(const size_types... sizes) :
-            data(sizes...)
+            requires (sizeof...(size_types) == Dimension_)
+        TMultiDimParam(const size_types... sizes) noexcept(noexcept(static_cast<SizeType_>(size_types())))
+            : data{ static_cast<SizeType_>(sizes)... }
+        {}
+
+        template <integral_pointer size_type_ptr>
+        TMultiDimParam(size_type_ptr arr, dimension_t size_arr = Dimension_) noexcept(noexcept(InitData(&arr[0])))
+            : InitData(arr)
         {}
 
         template <std::integral size_type>
-        TMultiDimSize(const size_type(&arr)[Dimension])
-            : data(arr)
+        TMultiDimParam(const size_type(&arr)[Dimension_]) noexcept(noexcept(InitData(&arr[0])) )
+            : InitData(&arr[0])
         {}
 
-        template <std::integral_ size_type>
-        TMultiDimSize(const size_type* arr, dimension_type size_arr = Dimension)
-            : sizes(InitSizes(arr, size_arr))
-            , data(InitData())
-        {}
+        constexpr SizeType_& operator[] (const dimension_t pos) noexcept(noexcept(data[pos])) {
+            return data[pos];
+        }
+
+        constexpr const SizeType_& operator[](const dimension_t pos) const noexcept(noexcept(data[pos])) {
+            return data[pos];
+        }
     };
 
     // nD MATRIX **********************************************************************************************************
-    template <unsigned char Dimension, typename T, class Alloc = std::allocator<T>>
+    template <dimension_t Dimension_, typename T, class Alloc = std::allocator<T>>
     class TMatrix {
     public:
 
-        using dimension_type = unsigned char;
-        static constexpr dimension_type Dimension = Dimension;
         using TData = std::vector<T, Alloc>;
         using data_size_type = typename TData::size_type;
-        using TSizes = std::vector<data_size_type>;
-        //using TSizes = data_size_type[Dimension];
-        using sizes_size_type = typename TSizes::size_type;
-        using reference = TData::reference;
+        using TSizes = TMultiDimParam<Dimension_, data_size_type>;
+
+        using reference       = TData::reference      ;
         using const_reference = TData::const_reference;
 
     private:
@@ -73,58 +84,6 @@ namespace sib {
         TData  data;
 
     protected:
-
-        template <typename ...size_types, typename std::enable_if_t< std::conjunction_v<std::is_integral<size_types>...>, bool > = true>
-        TSizes InitSizes(size_types... sizes) {
-            static_assert(sizeof...(sizes) == Dimension, "Constructor arguments count is not equal matrix dimension.");
-
-            TSizes tmp;
-            try {
-                tmp = { static_cast<data_size_type>(sizes)... };
-
-                AssertArePositive(sizes...);
-
-                return tmp;
-            }
-            catch (...) {
-                std::throw_with_nested(EMatrixConstruct("Matrix sizes initialization error."));
-            }
-        }
-
-        template <std::integral size_type>
-        TSizes InitSizes(const size_type(&arr)[Dimension]) {
-            TSizes tmp;
-            try {
-                tmp.resize(Dimension);
-                for (dimension_type i = 0; i < Dimension; ++i) {
-                    AssertArePositive(arr[i]);
-                    tmp[i] = static_cast<sizes_size_type>(arr[i]);
-                }
-                return tmp;
-            }
-            catch (...) {
-                std::throw_with_nested(EMatrixConstruct("Matrix sizes initialization error."));
-            }
-        }
-
-        template <std::integral size_type>
-        TSizes InitSizes(const size_type* arr, dimension_type size_arr) {
-            TSizes tmp;
-            try {
-                tmp.resize(size_arr);
-                for (dimension_type i = 0; i < size_arr; ++i) {
-                    AssertArePositive(arr[i]);
-                    tmp[i] = static_cast<sizes_size_type>(arr[i]);
-                }
-                if (size_arr != Dimension) {
-                    throw std::invalid_argument(std::format("Initializing dynamic array size ({}) is not equal matrix dimension ({}).", size_arr, Dimension));
-                }
-                return tmp;
-            }
-            catch (...) {
-                std::throw_with_nested(EMatrixConstruct("Matrix sizes initialization error."));
-            }
-        }
 
         TData InitData() {
             try {
@@ -142,7 +101,7 @@ namespace sib {
     public:
 
         TMatrix() noexcept
-            : sizes(Dimension, 0)
+            : sizes()
             , data(0)
         {}
 
@@ -153,13 +112,13 @@ namespace sib {
         {}
 
         template <std::integral size_type>
-        TMatrix(const size_type(&arr)[Dimension])
+        TMatrix(const size_type(&arr)[Dimension_])
             : sizes(InitSizes(arr))
             , data(InitData())
         {}
 
         template <std::integral size_type>
-        TMatrix(const size_type* arr, dimension_type size_arr = Dimension)
+        TMatrix(const size_type* arr, dimension_t size_arr = Dimension_)
             : sizes(InitSizes(arr, size_arr))
             , data(InitData())
         {}
