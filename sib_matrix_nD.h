@@ -21,24 +21,16 @@ namespace sib {
 
     template <dimension_t Dimension_, std::unsigned_integral SizeType_ = size_t>
     class TMultiDimParam {
+    public:
+
+        using TData = SizeType_[Dimension_];
+
     private:
-        SizeType_ data[Dimension_];
-    protected:
 
-        inline void InitData(SizeType_* arr) noexcept
-        {
-            std::memcpy(data, arr, sizeof(SizeType_) * Dimension_);
-        }
-
-        template <integral_pointer size_type_ptr>
-        inline void InitData(size_type_ptr arr) noexcept(noexcept(static_cast<SizeType_>(*arr)))
-        {
-            for (dimension_t i = 0; i < Dimension_; ++i) {
-                data[i] = static_cast<SizeType_>(arr[i]);
-            }
-        }
+        TData data;
 
     public:
+
         TMultiDimParam() = delete;
 
         template <std::integral ...size_types>
@@ -48,14 +40,33 @@ namespace sib {
         {}
 
         template <integral_pointer size_type_ptr>
-        TMultiDimParam(size_type_ptr arr, dimension_t size_arr = Dimension_) noexcept(noexcept(InitData(&arr[0])))
-            : InitData(arr)
-        {}
+        TMultiDimParam(const size_type_ptr arr, const dimension_t size_arr = Dimension_) {
+            for (dimension_t i = 0; i < Dimension_; ++i) {
+                data[i] = static_cast<SizeType_>(arr[i]);
+            }
+        }
 
-        template <std::integral size_type>
-        TMultiDimParam(const size_type(&arr)[Dimension_]) noexcept(noexcept(InitData(&arr[0])) )
-            : InitData(&arr[0])
-        {}
+        TMultiDimParam(const SizeType_* arr) {
+            std::memcpy(data, arr, sizeof(SizeType_) * Dimension_);
+        }
+
+        template <dimension_t dimension_, std::integral size_type>
+        TMultiDimParam(const size_type(&arr)[dimension_]) = delete;
+
+        template <dimension_t dimension_, std::integral size_type>
+            requires (dimension_ == Dimension_)
+        TMultiDimParam(const size_type(&arr)[dimension_]) : TMultiDimParam(&arr[0]) {}
+
+        template <typename T>
+        TMultiDimParam(const TMultiDimParam<Dimension_, T>& other) : TMultiDimParam(other.Data()) {}
+
+        TData& Data() {
+            return data;
+        };
+
+        const TData& Data() const {
+            return data;
+        };
 
         constexpr SizeType_& operator[] (const dimension_t pos) noexcept(noexcept(data[pos])) {
             return data[pos];
@@ -64,6 +75,7 @@ namespace sib {
         constexpr const SizeType_& operator[](const dimension_t pos) const noexcept(noexcept(data[pos])) {
             return data[pos];
         }
+
     };
 
     // nD MATRIX **********************************************************************************************************
