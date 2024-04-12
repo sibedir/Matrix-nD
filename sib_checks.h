@@ -7,24 +7,24 @@
 namespace sib {
     namespace chk {
         template <typename T>
-        using ñlean = std::remove_cvref_t<T>;
+        using Clean = std::remove_cvref_t<T>;
 
         template <typename T, bool arr = std::is_array_v<T>>
-        concept _integral_pointer_if_arr = !arr and std::is_pointer_v<ñlean<T>> and std::integral<std::remove_pointer_t<ñlean<T>>>;
+        concept _integral_pointer_if_arr = !arr and std::is_pointer_v<Clean<T>> and std::integral<std::remove_pointer_t<Clean<T>>>;
 
         template <typename T>
         concept integral_pointer = _integral_pointer_if_arr<T>;
 
         template <typename T>
-        concept integral_array = std::is_array_v<ñlean<T>> and std::integral<std::remove_extent_t<ñlean<T>>>;
+        concept integral_array = std::is_array_v<Clean<T>> and std::integral<std::remove_extent_t<Clean<T>>>;
 
         template <typename T, size_t N>
         concept integral_array_N =
-            std::is_array_v<ñlean<T>>
+            std::is_array_v<Clean<T>>
             and
-            std::is_same_v<ñlean<T>, std::remove_extent_t<ñlean<T>>[N]>
+            std::is_same_v<Clean<T>, std::remove_extent_t<Clean<T>>[N]>
             and
-            std::integral<std::remove_extent_t<ñlean<T>>>;
+            std::integral<std::remove_extent_t<Clean<T>>>;
 
         template <typename type>
         inline void AssertArePositive(type arg) {
