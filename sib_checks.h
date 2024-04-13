@@ -9,14 +9,19 @@ namespace sib {
         template <typename T>
         using Clean = std::remove_cvref_t<T>;
 
-        template <typename T, bool arr = std::is_array_v<T>>
-        concept _integral_pointer_if_arr = !arr and std::is_pointer_v<Clean<T>> and std::integral<std::remove_pointer_t<Clean<T>>>;
+        template <typename T>
+        concept integral_pointer =
+            !std::is_array_v<Clean<T>>
+            and
+            std::is_pointer_v<Clean<T>>
+            and
+            std::integral<std::remove_pointer_t<Clean<T>>>;
 
         template <typename T>
-        concept integral_pointer = _integral_pointer_if_arr<T>;
-
-        template <typename T>
-        concept integral_array = std::is_array_v<Clean<T>> and std::integral<std::remove_extent_t<Clean<T>>>;
+        concept integral_array =
+            std::is_array_v<Clean<T>>
+            and
+            std::integral<std::remove_extent_t<Clean<T>>>;
 
         template <typename T, size_t N>
         concept integral_array_N =

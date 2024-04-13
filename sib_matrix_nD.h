@@ -1,5 +1,6 @@
 #pragma once
 
+#include <initializer_list>
 #include <concepts>
 #include <vector>
 #include <array>
@@ -11,21 +12,43 @@ namespace sib {
 
     class EMatrix;
     class EMatrixConstruct;
-    class EMatrixSizes;
-    class EMatrixSizesConstruct;
 
     // nD MATRIX SIZES ****************************************************************************************************
 
+    template <std::integral T>
+    struct as_unsigned_h { using type = T; };
+
+    template <> struct as_unsigned_h<bool     > { using type = bool              ; };
+    template <> struct as_unsigned_h<char     > { using type = unsigned char     ; };
+    template <> struct as_unsigned_h<short    > { using type = unsigned short    ; };
+    template <> struct as_unsigned_h<int      > { using type = unsigned int      ; };
+    template <> struct as_unsigned_h<long     > { using type = unsigned long     ; };
+    template <> struct as_unsigned_h<long long> { using type = unsigned long long; };
+
+    template <std::integral T>
+    using as_unsigned = typename as_unsigned_h<T>::type;
+
     using dimension_t = unsigned char;
 
-    template <dimension_t Dimension_, std::unsigned_integral SizeType_ = size_t>
+    template <dimension_t Dimension_, std::integral SizeType__>
+    class TMultiDimParam;
+
+    template<typename First_, typename... Rest_>
+    TMultiDimParam(First_, Rest_...) ->
+        TMultiDimParam<
+            sizeof...(Rest_) + 1,
+            std::enable_if_t<
+                std::conjunction_v< std::is_same<First_, Rest_>... >,
+                First_
+            >
+        >;
+
+    template <dimension_t Dimension_, std::integral SizeType__ = size_t>
     class TMultiDimParam {
     public:
         
-        inline static constexpr auto Dimension = Dimension_;
-        using SizeType = SizeType_;
-        using PSizeType = SizeType_*;
-        using TData = SizeType_[Dimension];
+        using SizeType = as_unsigned<SizeType__>;
+        using TData = SizeType[Dimension_];
 
     private:
 
@@ -36,51 +59,67 @@ namespace sib {
         TMultiDimParam() = delete;
 
         template <std::integral ...size_types>
-            requires (sizeof...(size_types) == Dimension)
-        TMultiDimParam(const size_types... sizes) noexcept(noexcept(static_cast<SizeType_>(size_types())))
-            : data{ static_cast<SizeType_>(sizes)... }
+            requires (sizeof...(size_types) == Dimension_)
+        constexpr explicit TMultiDimParam(const size_types... sizes)
+            noexcept(noexcept(static_cast<SizeType>(size_types())))
+            : data{ static_cast<SizeType>(sizes)... }
         {}
 
+        constexpr TMultiDimParam(std::initializer_list<SizeType> initlist)
+            noexcept
+            : data{ initlist }
+        {}
+
+        template <std::integral size_type>
+            requires (!std::is_same_v<size_type, SizeType>)
+        constexpr explicit TMultiDimParam(std::initializer_list<size_type> initlist)
+            noexcept(noexcept(static_cast<SizeType>(size_type())))
+            : data{ static_cast<SizeType>(initlist)... }
+        {}
+
+        constexpr explicit TMultiDimParam(const SizeType* arr)
+        {
+            std::memcpy(data, arr, sizeof(SizeType) * Dimension_);
+        }
+
         template <chk::integral_pointer size_type_ptr>
-        TMultiDimParam(size_type_ptr source, const dimension_t length = Dimension) {
-            for (dimension_t i = 0; i < Dimension; ++i) {
-                data[i] = static_cast<SizeType_>(source[i]);
+            requires (!std::is_same_v<size_type_ptr, SizeType*>)
+        constexpr explicit TMultiDimParam(size_type_ptr source, const dimension_t length = Dimension_)
+        {
+            std::cout << "--------------------" << std::endl;
+            std::cout << typeid(size_type_ptr).name() << std::endl;
+            std::cout << typeid(SizeType*).name() << std::endl;
+            for (dimension_t i = 0; i < Dimension_; ++i) {
+                data[i] = static_cast<SizeType>(source[i]);
             }
         }
 
-        TMultiDimParam(const SizeType_* arr) {
-            std::memcpy(data, arr, sizeof(SizeType_) * Dimension);
-        }
+        template <dimension_t dimension_, std::integral size_type>
+        constexpr explicit TMultiDimParam(const size_type(&)[dimension_]) = delete;
 
-        //template <dimension_t dimension_, std::integral size_type>
-        //TMultiDimParam(const size_type(&arr)[dimension_]) = delete;
-        template <chk::integral_array size_type_arr>
-        TMultiDimParam(const size_type_arr&) = delete;
-
-        //template <dimension_t dimension_, std::integral size_type>
-        //    requires (dimension_ == Dimension_)
-        //TMultiDimParam(const size_type(&arr)[dimension_])
-        template <chk::integral_array_N<Dimension> size_type_arr>
-        TMultiDimParam(const size_type_arr& arr)
+        template <dimension_t dimension_, std::integral size_type>
+            requires (dimension_ == Dimension_)
+        constexpr explicit TMultiDimParam(const size_type(&arr)[dimension_])
             : TMultiDimParam(&arr[0])
         {}
 
         template <typename T>
-        TMultiDimParam(const TMultiDimParam<Dimension, T>& other) : TMultiDimParam(other.Data()) {}
+        constexpr explicit TMultiDimParam(const TMultiDimParam<Dimension_, T>& other)
+            : TMultiDimParam(other.Data())
+        {}
 
-        TData& Data() {
-            return data;
-        };
+        constexpr const TData& Data() const { return data; };
+        constexpr       TData& Data()       { return data; };
 
-        const TData& Data() const {
-            return data;
-        };
-
-        constexpr SizeType_& operator[] (const dimension_t pos) noexcept(noexcept(data[pos])) {
+        constexpr const SizeType& operator[](const dimension_t pos) const
+            noexcept(noexcept(data[pos]))
+        {
             return data[pos];
         }
 
-        constexpr const SizeType_& operator[](const dimension_t pos) const noexcept(noexcept(data[pos])) {
+        constexpr       SizeType& operator[](const dimension_t pos)
+            noexcept(noexcept(data[pos]))
+        {
             return data[pos];
         }
     };
