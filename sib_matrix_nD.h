@@ -33,7 +33,7 @@ namespace sib {
     template <dimension_t Dimension_, std::integral SizeType__>
     class TMultiDimParam;
 
-    template<typename First_, typename... Rest_>
+    template<std::integral First_, std::integral... Rest_>
     TMultiDimParam(First_, Rest_...) ->
         TMultiDimParam<
             sizeof...(Rest_) + 1,
@@ -65,15 +65,15 @@ namespace sib {
             : data{ static_cast<SizeType>(sizes)... }
         {}
 
-        constexpr TMultiDimParam(std::initializer_list<SizeType> initlist)
+        constexpr explicit TMultiDimParam(std::initializer_list<SizeType> initlist)
             noexcept
             : data{ initlist }
         {}
 
-        template <std::integral size_type>
-            requires (!std::is_same_v<size_type, SizeType>)
-        constexpr explicit TMultiDimParam(std::initializer_list<size_type> initlist)
-            noexcept(noexcept(static_cast<SizeType>(size_type())))
+        //template <std::integral size_type>
+        //    requires (!std::is_same_v<size_type, SizeType>)
+        constexpr TMultiDimParam(std::initializer_list<SizeType__> initlist)
+            //noexcept(noexcept(static_cast<SizeType>(size_type())))
             : data{ static_cast<SizeType>(initlist)... }
         {}
 

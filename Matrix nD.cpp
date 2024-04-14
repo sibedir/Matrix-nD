@@ -9,6 +9,57 @@
 
 #include "sib_matrix_nD.h"
 #include "sib_exception.h"
+#include "sib_checks.h"
+
+template <std::integral F, std::integral... R>
+struct integer_promotion_h {
+	using type = decltype(F() + integer_promotion_h<R...>::type());
+};
+
+template <std::integral F, std::integral S>
+struct integer_promotion_h<F, S> {
+	using type = decltype(F() + S());;
+};
+
+template <std::integral T>
+struct integer_promotion_h<T, T> {
+	using type = T;
+};
+
+template <std::integral... Ts>
+using integer_promotion_t = typename integer_promotion_h<Ts...>::type;
+
+template <typename T>
+concept unsigned_integral = std::integral<T> and std::is_unsigned_v<T>;
+
+constexpr bool ItsLike(bool val) { return val; }
+
+template <size_t N, unsigned_integral T>
+class TMy {
+public:
+	using TData = T[N];
+private:
+    TData data;
+public:
+	template <std::integral... Ts>
+		requires (sizeof...(Ts) == N)
+	constexpr TMy(const Ts&... val)
+		: data{ static_cast<T>(val)... }
+	{
+		static_assert(ItsLike(sib::chk::ThereNegative(val...) == 0), "Negative argument.");
+	}
+};
+
+constexpr auto fgas = ItsLike(sib::chk::ThereNegative(2, 4lu, char(-5), 0, 3) == 0);
+
+constexpr auto sdf = sib::chk::ThereNegative(2, 4lu, char(5), 0, 3);
+
+std::common_type_t<int, size_t, unsigned char, unsigned long> nfy;
+
+template <std::integral... Ts>
+TMy(Ts...) -> TMy<sizeof...(Ts), std::common_type_t<Ts...>>;
+
+constexpr TMy v1{ 2, 4lu, char(5), 3 };
 
 int main()
 {
@@ -27,8 +78,10 @@ int main()
 
 		decltype(main) dfgd;
 
-		auto sdf = std::vector{ 3, 5, 6 };
-		auto mds = sib::TMultiDimParam{ 3, 4, 6 };
+		//auto sdf = std::vector{ 3, 5u, 6 };
+		/*
+		auto sdf = { 3, size_t(5), 6 };
+		auto mds = sib::TMultiDimParam{ 3, size_t(5), 6 };
 
 		sib::TMultiDimParam mds0(arr0);
 		sib::TMultiDimParam mds1(arr1);
@@ -38,6 +91,7 @@ int main()
 
 		sib::TMultiDimParam<5> mds4(ptr0);
 		sib::TMultiDimParam<4> mds5(ptr1);
+		*/
 
 		int d = 8;
 	}
