@@ -18,23 +18,29 @@ int main()
 	try {
 		auto sdf = std::vector{ 3, 5, 6 };
 
-		constexpr auto mds0 = sib::TMultiDimParam<3, unsigned int>{ 3, 5, 6 };
+		constexpr auto mds0 = sib::TMultiDimParam<3, unsigned int>{ 4, 5, 6 };
 
 		sib::TMultiDimParam<3, unsigned> mds1{ 3, 5, 6 };
 
-		auto mds2 = sib::TMultiDimParam(3, 5, 6);
+		//auto mds2 = sib::TMultiDimParam(3, 5, 6);
 
-		int arr0[] { 5, 6, 2, 7 };
-		/*
-		sib::TMultiDimParam mds0(arr0);
-		sib::TMultiDimParam mds1(arr1);
+		int arr0[]{ 5, 6, 2, 7 };
+		size_t arr1[]{ 5, 6, 2, 7 };
 		
-		sib::TMultiDimParam mds2(mds0);
-		sib::TMultiDimParam mds3(mds1);
+		constexpr auto asd = sizeof(arr0) / sizeof(std::remove_extent_t<decltype(arr0)>);
 
-		sib::TMultiDimParam<5> mds4(ptr0);
-		sib::TMultiDimParam<4> mds5(ptr1);
-		*/
+		auto ptr0 = &arr0[0];
+		auto ptr1 = &arr1[0];
+
+		//sib::TMultiDimParam mds3(arr0);
+		sib::TMultiDimParam mds4(arr1);
+		
+		//sib::TMultiDimParam mds5(mds3);
+		//sib::TMultiDimParam mds6(mds4);
+
+		//sib::TMultiDimParam<5> mds7(ptr0);
+		//sib::TMultiDimParam<4> mds8(ptr1);
+	
 	}
 	catch (const std::exception& exc) {
 		std::cerr << sib::ExceptionInfo(exc) << std::endl;

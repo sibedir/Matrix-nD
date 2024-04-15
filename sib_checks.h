@@ -5,13 +5,13 @@
 #include <stdexcept>
 #include <variant>
 
-namespace sib {
-    namespace chk {
-
 #ifdef SIB_DEBUG_INTEGRAL_CAST_FULL
 #define SIB_DEBUG_INTEGRAL_CAST_SIGN
 #define SIB_DEBUG_INTEGRAL_CAST_OVERFLOW
 #endif
+
+namespace sib {
+    namespace chk {
 
 #ifdef SIB_DEBUG_INTEGRAL_CAST_SIGN
         constexpr bool SIB_DEBUG_INTEGRAL_CAST_SIGN_ON = true;
