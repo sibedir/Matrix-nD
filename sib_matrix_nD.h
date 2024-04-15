@@ -13,44 +13,25 @@ namespace sib {
     class EMatrix;
     class EMatrixConstruct;
 
-    // nD MATRIX SIZES ****************************************************************************************************
-
-    template <std::integral T>
-    struct as_unsigned_h { using type = T; };
-
-    template <> struct as_unsigned_h<bool     > { using type = bool              ; };
-    template <> struct as_unsigned_h<char     > { using type = unsigned char     ; };
-    template <> struct as_unsigned_h<short    > { using type = unsigned short    ; };
-    template <> struct as_unsigned_h<int      > { using type = unsigned int      ; };
-    template <> struct as_unsigned_h<long     > { using type = unsigned long     ; };
-    template <> struct as_unsigned_h<long long> { using type = unsigned long long; };
-
-    template <std::integral T>
-    using as_unsigned = typename as_unsigned_h<T>::type;
-
     using dimension_t = unsigned char;
 
-    template <dimension_t Dimension_, std::integral SizeType__>
+    // nD MATRIX SIZES ****************************************************************************************************
+    template <dimension_t Dimension, std::unsigned_integral SizeType>
     class TMultiDimParam;
 
-    template<std::integral First_, std::integral... Rest_>
-    TMultiDimParam(First_, Rest_...) ->
-        TMultiDimParam<
-            sizeof...(Rest_) + 1,
-            std::enable_if_t<
-                std::conjunction_v< std::is_same<First_, Rest_>... >,
-                First_
-            >
-        >;
+    template<std::integral... Ts>
+    TMultiDimParam(Ts...) -> TMultiDimParam< sizeof...(Ts), std::make_unsigned_t<std::common_type_t<Ts...>> >;
 
-    template <dimension_t Dimension_, std::integral SizeType__ = size_t>
+    // -----------------------------------------------------------------
+    template <dimension_t Dimension, std::unsigned_integral SizeType = size_t>
     class TMultiDimParam {
     public:
         
-        using SizeType = as_unsigned<SizeType__>;
-        using TData = SizeType[Dimension_];
+        //using SizeType = as_unsigned_t<SizeType__>;
+        using TData = SizeType[Dimension];
 
     private:
+
 
         TData data;
 
@@ -59,52 +40,41 @@ namespace sib {
         TMultiDimParam() = delete;
 
         template <std::integral ...size_types>
-            requires (sizeof...(size_types) == Dimension_)
-        constexpr explicit TMultiDimParam(const size_types... sizes)
-            noexcept(noexcept(static_cast<SizeType>(size_types())))
-            : data{ static_cast<SizeType>(sizes)... }
-        {}
-
-        constexpr explicit TMultiDimParam(std::initializer_list<SizeType> initlist)
-            noexcept
-            : data{ initlist }
-        {}
-
-        //template <std::integral size_type>
-        //    requires (!std::is_same_v<size_type, SizeType>)
-        constexpr TMultiDimParam(std::initializer_list<SizeType__> initlist)
-            //noexcept(noexcept(static_cast<SizeType>(size_type())))
-            : data{ static_cast<SizeType>(initlist)... }
-        {}
-
-        constexpr explicit TMultiDimParam(const SizeType* arr)
+        constexpr TMultiDimParam(const size_types... sizes)
+            noexcept( noexcept( chk::integral_cast<SizeType>(sizes) ) )
+            : data{ chk::integral_cast<SizeType>(sizes)... }
         {
-            std::memcpy(data, arr, sizeof(SizeType) * Dimension_);
+            //constexpr auto sdgfa = (noexcept(chk::integral_cast<SizeType>(sizes)) and ...);
+            //if (sdgfa) std::cerr << "dsfad";
         }
 
-        template <chk::integral_pointer size_type_ptr>
-            requires (!std::is_same_v<size_type_ptr, SizeType*>)
-        constexpr explicit TMultiDimParam(size_type_ptr source, const dimension_t length = Dimension_)
+        constexpr TMultiDimParam(const SizeType* arr)
         {
-            std::cout << "--------------------" << std::endl;
-            std::cout << typeid(size_type_ptr).name() << std::endl;
-            std::cout << typeid(SizeType*).name() << std::endl;
-            for (dimension_t i = 0; i < Dimension_; ++i) {
+            constexpr auto ghsd = chk::integral_cast<int>('1');
+
+            std::memcpy(data, arr, sizeof(SizeType) * Dimension);
+        }
+
+        template <std::integral size_type>
+            requires (!std::is_same_v<size_type*, SizeType*>)
+        constexpr TMultiDimParam(size_type* source)
+        {
+            for (dimension_t i = 0; i < Dimension; ++i) {
                 data[i] = static_cast<SizeType>(source[i]);
             }
         }
 
-        template <dimension_t dimension_, std::integral size_type>
-        constexpr explicit TMultiDimParam(const size_type(&)[dimension_]) = delete;
+        template <dimension_t dimension, std::integral size_type>
+        constexpr TMultiDimParam(const size_type(&)[dimension]) = delete;
 
-        template <dimension_t dimension_, std::integral size_type>
-            requires (dimension_ == Dimension_)
-        constexpr explicit TMultiDimParam(const size_type(&arr)[dimension_])
+        template <dimension_t dimension, std::integral size_type>
+            requires (dimension == Dimension)
+        constexpr TMultiDimParam(const size_type(&arr)[dimension])
             : TMultiDimParam(&arr[0])
         {}
 
         template <typename T>
-        constexpr explicit TMultiDimParam(const TMultiDimParam<Dimension_, T>& other)
+        constexpr TMultiDimParam(const TMultiDimParam<Dimension, T>& other)
             : TMultiDimParam(other.Data())
         {}
 

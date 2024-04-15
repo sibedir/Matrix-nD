@@ -1,4 +1,6 @@
-﻿#include <iostream>
+﻿//#define SIB_DEBUG_INTEGRAL_CAST_FULL
+
+#include <iostream>
 #include <stdexcept>
 #include <type_traits>
 #include <concepts>
@@ -11,78 +13,19 @@
 #include "sib_exception.h"
 #include "sib_checks.h"
 
-template <std::integral F, std::integral... R>
-struct integer_promotion_h {
-	using type = decltype(F() + integer_promotion_h<R...>::type());
-};
-
-template <std::integral F, std::integral S>
-struct integer_promotion_h<F, S> {
-	using type = decltype(F() + S());;
-};
-
-template <std::integral T>
-struct integer_promotion_h<T, T> {
-	using type = T;
-};
-
-template <std::integral... Ts>
-using integer_promotion_t = typename integer_promotion_h<Ts...>::type;
-
-template <typename T>
-concept unsigned_integral = std::integral<T> and std::is_unsigned_v<T>;
-
-constexpr bool ItsLike(bool val) { return val; }
-
-template <size_t N, unsigned_integral T>
-class TMy {
-public:
-	using TData = T[N];
-private:
-    TData data;
-public:
-	template <std::integral... Ts>
-		requires (sizeof...(Ts) == N)
-	constexpr TMy(const Ts&... val)
-		: data{ static_cast<T>(val)... }
-	{
-		static_assert(ItsLike(sib::chk::ThereNegative(val...) == 0), "Negative argument.");
-	}
-};
-
-constexpr auto fgas = ItsLike(sib::chk::ThereNegative(2, 4lu, char(-5), 0, 3) == 0);
-
-constexpr auto sdf = sib::chk::ThereNegative(2, 4lu, char(5), 0, 3);
-
-std::common_type_t<int, size_t, unsigned char, unsigned long> nfy;
-
-template <std::integral... Ts>
-TMy(Ts...) -> TMy<sizeof...(Ts), std::common_type_t<Ts...>>;
-
-constexpr TMy v1{ 2, 4lu, char(5), 3 };
-
 int main()
 {
 	try {
-		int arr0[5]{ 1, 9, 4, 3, 8 };
-		size_t arr1[4]{ 6, 2, 2, 9 };
+		auto sdf = std::vector{ 3, 5, 6 };
 
-		int* ptr0 = arr0;
-		size_t* ptr1 = arr1;
+		constexpr auto mds0 = sib::TMultiDimParam<3, unsigned int>{ 3, 5, 6 };
 
-		using arr_t = decltype(arr0);
-		constexpr auto b0 = std::is_array_v<arr_t>;
-		constexpr auto b1 = sib::chk::integral_array<arr_t>;
-		constexpr auto b2 = sib::chk::integral_array_N<arr_t, 5>;
-		constexpr auto b3 = sib::chk::integral_pointer<arr_t>;
+		sib::TMultiDimParam<3, unsigned> mds1{ 3, 5, 6 };
 
-		decltype(main) dfgd;
+		auto mds2 = sib::TMultiDimParam(3, 5, 6);
 
-		//auto sdf = std::vector{ 3, 5u, 6 };
+		int arr0[] { 5, 6, 2, 7 };
 		/*
-		auto sdf = { 3, size_t(5), 6 };
-		auto mds = sib::TMultiDimParam{ 3, size_t(5), 6 };
-
 		sib::TMultiDimParam mds0(arr0);
 		sib::TMultiDimParam mds1(arr1);
 		
@@ -92,8 +35,6 @@ int main()
 		sib::TMultiDimParam<5> mds4(ptr0);
 		sib::TMultiDimParam<4> mds5(ptr1);
 		*/
-
-		int d = 8;
 	}
 	catch (const std::exception& exc) {
 		std::cerr << sib::ExceptionInfo(exc) << std::endl;
