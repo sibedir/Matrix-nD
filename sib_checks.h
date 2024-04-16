@@ -3,45 +3,66 @@
 #include <limits>
 #include <format>
 #include <stdexcept>
-#include <variant>
-
-#ifdef SIB_DEBUG_INTEGRAL_CAST_FULL
-#define SIB_DEBUG_INTEGRAL_CAST_SIGN
-#define SIB_DEBUG_INTEGRAL_CAST_OVERFLOW
-#endif
 
 namespace sib {
     namespace chk {
 
-#ifdef SIB_DEBUG_INTEGRAL_CAST_SIGN
-        constexpr bool SIB_DEBUG_INTEGRAL_CAST_SIGN_ON = true;
-#else
-        constexpr bool SIB_DEBUG_INTEGRAL_CAST_SIGN_ON = false;
-#endif
-#ifdef SIB_DEBUG_INTEGRAL_CAST_OVERFLOW
-        constexpr bool SIB_DEBUG_INTEGRAL_CAST_OVERFLOW_ON = true;
-#else
-        constexpr bool SIB_DEBUG_INTEGRAL_CAST_OVERFLOW_ON = false;
+#ifdef SIB_DEBUG_INTEGRAL_CAST_FULL
+#define SIB_DEBUG_INTEGRAL_CAST_SIGN
+#define SIB_DEBUG_INTEGRAL_CAST_OUT
 #endif
 
-        template <std::integral TargetType, std::integral SourceType>
-        constexpr bool __hit_with_sign(SourceType) { return false; }
+#if defined(SIB_DEBUG_INTEGRAL_CAST_SIGN) ||        \
+    defined(SIB_DEBUG_INTEGRAL_CAST_OUT)
+#define SIB_DEBUG_INTEGRAL_CAST_ANY
+#endif
 
-        template <std::unsigned_integral TargetType, std::integral SourceType>
-        constexpr bool __hit_with_sign(SourceType source) { return source < 0; }
+        template <std::integral SourceType, std::integral TargetType>
+        constexpr bool __may_be_hit_by_sign = std::unsigned_integral<TargetType>;
+
+        template <std::integral T>
+        constexpr bool __may_be_hit_by_sign<T, T> = false;
+
+        static_assert(__may_be_hit_by_sign<short , char  > == false);
+        static_assert(__may_be_hit_by_sign<size_t, int   > == false);
+        static_assert(__may_be_hit_by_sign<int   , size_t> == true );
+        static_assert(__may_be_hit_by_sign<size_t, size_t> == false);
+
+        template <std::integral SourceType, std::integral TargetType
+            , typename CommonType = std::common_type_t<SourceType, TargetType>
+            , CommonType SourceMAX = std::numeric_limits<SourceType>::max()
+            , CommonType SourceMIN = std::numeric_limits<SourceType>::min()
+            , CommonType TargetMAX = std::numeric_limits<TargetType>::max()
+            , CommonType TargetMIN = std::numeric_limits<TargetType>::min()
+        >
+        constexpr bool __may_be_hit_by_out = (SourceMAX > TargetMAX) or (SourceMIN < TargetMIN);
+
+        static_assert(__may_be_hit_by_out<char     , char     > == false);
+        static_assert(__may_be_hit_by_out<short    , size_t   > == false);
+        static_assert(__may_be_hit_by_out<short    , char     > == true );
+        static_assert(__may_be_hit_by_out<int      , long     > == false);
+        static_assert(__may_be_hit_by_out<long long, int      > == true );
+        static_assert(__may_be_hit_by_out<unsigned , long long> == false);
+        static_assert(__may_be_hit_by_out<unsigned , long     > == true );
 
         template <std::integral TargetType, std::integral SourceType>
         constexpr TargetType integral_cast(const SourceType& val)
-            noexcept(!SIB_DEBUG_INTEGRAL_CAST_SIGN_ON and !SIB_DEBUG_INTEGRAL_CAST_OVERFLOW_ON)
+#ifdef SIB_DEBUG_INTEGRAL_CAST_ANY
+            noexcept (!__may_be_hit_by_sign<SourceType, TargetType> and !__may_be_hit_by_out<SourceType, TargetType>)
+#else
+            noexcept(noexcept(static_cast<TargetType>(val)))
+#endif
         {
 #ifdef SIB_DEBUG_INTEGRAL_CAST_SIGN
-            if (__hit_with_sign<TargetType>(val))
-                throw std::underflow_error("Negative to unsigned.");
+            if constexpr (__may_be_hit_by_sign<SourceType, TargetType>) {
+                if (val < 0)
+                    throw std::invalid_argument ("Integral_cast negative to unsigned.");
+            }
 #endif
             auto result = static_cast<TargetType>(val);
-#ifdef SIB_DEBUG_INTEGRAL_CAST_OVERFLOW
+#ifdef SIB_DEBUG_INTEGRAL_CAST_OUT
             if (result != val)
-                throw std::overflow_error("Overflow in integral_cast.");
+                throw std::out_of_range("Out of range when integral_cast.");
 #endif
             return result;
         }

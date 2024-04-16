@@ -1,4 +1,6 @@
 ﻿//#define SIB_DEBUG_INTEGRAL_CAST_FULL
+#define SIB_DEBUG_INTEGRAL_CAST_SIGN
+#define SIB_DEBUG_INTEGRAL_CAST_OUT
 
 #include <iostream>
 #include <stdexcept>
@@ -8,39 +10,42 @@
 #include <string>
 #include <array>
 #include <initializer_list>
+#include <functional>
+#include <unordered_map>
 
 #include "sib_matrix_nD.h"
 #include "sib_exception.h"
 #include "sib_checks.h"
 
+struct tB {};
+
+struct tD : tB {
+	char ch;
+};
+/*
+constexpr bool sc_d_i = noexcept(static_cast<int   >(std::declval<double>()));
+constexpr bool sc_i_d = noexcept(static_cast<double>(std::declval<int   >()));
+
+constexpr bool sc_n_i = noexcept(std::enable_if_t<std::is_same_v< decltype( static_cast<int      >(std::declval<nullptr_t>()) ), int       >, std::true_type>::value);
+constexpr bool sc_i_n = noexcept(std::enable_if_t<std::is_same_v< decltype( static_cast<nullptr_t>(std::declval<int      >()) ), nullptr_t >, std::true_type>::value);
+
+constexpr bool sc_B_D = noexcept(static_cast<tD>(std::declval<tB>()));
+constexpr bool sc_D_B = noexcept(static_cast<tB>(std::declval<tD>()));
+
+constexpr bool dc_B_D = noexcept(std::enable_if_t<std::is_same_v< decltype( dynamic_cast<tD*>(std::declval<tB*>()) ), tD* >, std::true_type>::value);
+constexpr bool dc_D_B = noexcept(std::enable_if_t<std::is_same_v< decltype( dynamic_cast<tB*>(std::declval<tD*>()) ), tB* >, std::true_type>::value);
+
+constexpr bool rc_B_D = noexcept(reinterpret_cast<tD*>(std::declval<tB*>()));
+constexpr bool rc_D_B = noexcept(reinterpret_cast<tB*>(std::declval<tD*>()));
+*/
+
 int main()
 {
 	try {
-		auto sdf = std::vector{ 3, 5, 6 };
 
-		constexpr auto mds0 = sib::TMultiDimParam<3, unsigned int>{ 4, 5, 6 };
-
-		sib::TMultiDimParam<3, unsigned> mds1{ 3, 5, 6 };
-
-		//auto mds2 = sib::TMultiDimParam(3, 5, 6);
-
-		int arr0[]{ 5, 6, 2, 7 };
-		size_t arr1[]{ 5, 6, 2, 7 };
-		
-		constexpr auto asd = sizeof(arr0) / sizeof(std::remove_extent_t<decltype(arr0)>);
-
-		auto ptr0 = &arr0[0];
-		auto ptr1 = &arr1[0];
-
-		//sib::TMultiDimParam mds3(arr0);
-		sib::TMultiDimParam mds4(arr1);
-		
-		//sib::TMultiDimParam mds5(mds3);
-		//sib::TMultiDimParam mds6(mds4);
-
-		//sib::TMultiDimParam<5> mds7(ptr0);
-		//sib::TMultiDimParam<4> mds8(ptr1);
-	
+		int i = rand() * 10000;
+		size_t st = sib::chk::integral_cast<unsigned char>(i);
+		std::cout << st << std::endl;
 	}
 	catch (const std::exception& exc) {
 		std::cerr << sib::ExceptionInfo(exc) << std::endl;
