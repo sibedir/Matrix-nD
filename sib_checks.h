@@ -17,52 +17,61 @@ namespace sib {
 #define SIB_DEBUG_INTEGRAL_CAST_ANY
 #endif
 
+#ifdef SIB_DEBUG_INTEGRAL_CAST_SIGN
         template <std::integral SourceType, std::integral TargetType>
-        constexpr bool __may_be_hit_by_sign = std::unsigned_integral<TargetType>;
+        constexpr bool __may_be_hit_by_sign() noexcept {
+            return std::signed_integral<SourceType> and std::unsigned_integral<TargetType>;
+        }
 
-        template <std::integral T>
-        constexpr bool __may_be_hit_by_sign<T, T> = false;
+        static_assert(__may_be_hit_by_sign<short  , char  >() == false);
+        static_assert(__may_be_hit_by_sign<size_t , int   >() == false);
+        static_assert(__may_be_hit_by_sign<int    , size_t>() == true );
+        static_assert(__may_be_hit_by_sign<size_t , size_t>() == false);
+        static_assert(__may_be_hit_by_sign<uint8_t, size_t>() == false);
+#endif
 
-        static_assert(__may_be_hit_by_sign<short , char  > == false);
-        static_assert(__may_be_hit_by_sign<size_t, int   > == false);
-        static_assert(__may_be_hit_by_sign<int   , size_t> == true );
-        static_assert(__may_be_hit_by_sign<size_t, size_t> == false);
+#ifdef SIB_DEBUG_INTEGRAL_CAST_OUT
+        template <std::integral SourceType, std::integral TargetType>
+        constexpr bool __may_be_hit_by_out() noexcept {
+            using CommonType = std::common_type_t<SourceType, TargetType>;
+            constexpr CommonType SourceMAX = (std::numeric_limits<SourceType>::max)();
+            constexpr CommonType SourceMIN = (std::numeric_limits<SourceType>::min)();
+            constexpr CommonType TargetMAX = (std::numeric_limits<TargetType>::max)();
+            constexpr CommonType TargetMIN = (std::numeric_limits<TargetType>::min)();
 
-        template <std::integral SourceType, std::integral TargetType
-            , typename CommonType = std::common_type_t<SourceType, TargetType>
-            , CommonType SourceMAX = std::numeric_limits<SourceType>::max()
-            , CommonType SourceMIN = std::numeric_limits<SourceType>::min()
-            , CommonType TargetMAX = std::numeric_limits<TargetType>::max()
-            , CommonType TargetMIN = std::numeric_limits<TargetType>::min()
-        >
-        constexpr bool __may_be_hit_by_out = (SourceMAX > TargetMAX) or (SourceMIN < TargetMIN);
+            return (SourceMAX > TargetMAX) or (SourceMIN < TargetMIN);
+        }
 
-        static_assert(__may_be_hit_by_out<char     , char     > == false);
-        static_assert(__may_be_hit_by_out<short    , size_t   > == false);
-        static_assert(__may_be_hit_by_out<short    , char     > == true );
-        static_assert(__may_be_hit_by_out<int      , long     > == false);
-        static_assert(__may_be_hit_by_out<long long, int      > == true );
-        static_assert(__may_be_hit_by_out<unsigned , long long> == false);
-        static_assert(__may_be_hit_by_out<unsigned , long     > == true );
+        static_assert(__may_be_hit_by_out<char     , char     >() == false);
+        static_assert(__may_be_hit_by_out<short    , size_t   >() == false);
+        static_assert(__may_be_hit_by_out<short    , char     >() == true );
+        static_assert(__may_be_hit_by_out<int      , long     >() == false);
+        static_assert(__may_be_hit_by_out<long long, int      >() == true );
+        static_assert(__may_be_hit_by_out<unsigned , long long>() == false);
+        static_assert(__may_be_hit_by_out<unsigned , long     >() == true );
+#endif
 
+        // INTEGRAL_CAST ===============================================================================================
         template <std::integral TargetType, std::integral SourceType>
         constexpr TargetType integral_cast(const SourceType& val)
 #ifdef SIB_DEBUG_INTEGRAL_CAST_ANY
-            noexcept (!__may_be_hit_by_sign<SourceType, TargetType> and !__may_be_hit_by_out<SourceType, TargetType>)
+            noexcept (!__may_be_hit_by_sign<SourceType, TargetType>() and !__may_be_hit_by_out<SourceType, TargetType>())
 #else
             noexcept(noexcept(static_cast<TargetType>(val)))
 #endif
         {
 #ifdef SIB_DEBUG_INTEGRAL_CAST_SIGN
-            if constexpr (__may_be_hit_by_sign<SourceType, TargetType>) {
+            if constexpr (__may_be_hit_by_sign<SourceType, TargetType>()) {
                 if (val < 0)
                     throw std::invalid_argument ("Integral_cast negative to unsigned.");
             }
 #endif
             auto result = static_cast<TargetType>(val);
 #ifdef SIB_DEBUG_INTEGRAL_CAST_OUT
-            if (result != val)
-                throw std::out_of_range("Out of range when integral_cast.");
+            if constexpr (__may_be_hit_by_out<SourceType, TargetType>()) {
+                if (val != result)
+                    throw std::out_of_range("Out of range when integral_cast.");
+            }
 #endif
             return result;
         }

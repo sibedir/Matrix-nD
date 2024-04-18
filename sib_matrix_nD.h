@@ -34,61 +34,55 @@ namespace sib {
     // nD MATRIX **********************************************************************************************************
     using dim_t = unsigned char;
 
-    template <dim_t Dimension, typename Type, class Alloc = std::allocator<Type>>
+    template <typename type_, dim_t dimension_, class alloc_ = std::allocator<type_>>
     class TMatrix {
     public:
 
-        using TData = std::vector<Type, Alloc>;
+        using TData = std::vector<type_, alloc_>;
         using size_type = typename TData::size_type;
-        using TSizeArr = size_type[Dimension];
+        using TSize = std::vector<size_type>;
 
         using reference       = TData::reference      ;
         using const_reference = TData::const_reference;
 
     private:
 
-        TSizeArr size;
-        TSizeArr capacity;
+        TSize size;
         TData data;
 
     protected:
 
-        size_type CalcTotalCapacity() {
+        size_type CalcTotalSize() {
             auto res = size_type(1);
-            for (auto& s : capacity) { res *= s; }
+            for (auto& s : size) { res *= s; }
             return res;
         }
 
     public:
 
-        TMatrix() noexcept
+        constexpr TMatrix() noexcept
             : size{}
-            , capacity{}
             , data(0)
         {}
 
-        template <std::convertible_to<size_type> ...SizeTypes>
-            requires (sizeof...(SizeTypes) == Dimension)
-        TMatrix(const SizeTypes... sizes)
-            : size{ static_cast<size_type>(sizes)... }
-            , capacity{ static_cast<size_type>(sizes)... }
-            , data(CalcTotalCapacity)
-        {
-        }
+        template <std::integral ...size_types_>
+            requires (sizeof...(size_types_) == dimension_)
+        constexpr TMatrix(const size_types_&... sizes)
+            : size{ chk::integral_cast<size_type>(sizes)... }
+            , data(CalcTotalSize())
+        {}
 
-        template <std::integral size_type>
-        TMatrix(const size_type(&arr)[Dimension])
+        constexpr TMatrix(const size_type(&arr)[dimension_])
             : size()
             , data()
         {}
 
-        template <std::integral size_type>
-        TMatrix(const size_type* arr, dim_t size_arr = Dimension)
+        constexpr TMatrix(const size_type* arr, dim_t size_arr = dimension_)
             : size()
             , data()
         {}
 
-        //constexpr dimension_type Dimension() const noexcept { return Dim; }
+        constexpr dim_t Dimension() const noexcept { return dimension_; }
 
         size_type DataSize() const noexcept(noexcept(data.size())) { return data.size(); }
 
@@ -103,6 +97,9 @@ namespace sib {
         }
 
     };
+
+    template <typename type_, std::integral ...size_types_>
+    TMatrix(size_types_...) -> TMatrix<type_, sizeof...(size_types_)>;
 
     // SPECIFIC EXCEPTIONS **********************************************************************************************************
 

@@ -26,7 +26,7 @@ namespace sib {
         }
 
         std::string _ExceptionInfo(const std::exception& exc, const bool line_break, std::string& tab) {
-            auto result = tab + typeid(exc).name() + " = \"" + exc.what() + "\"";
+            auto result = tab + typeid(exc).name() + ": \"" + exc.what() + "\"";
 
             try {
                 std::rethrow_if_nested(exc);
@@ -38,7 +38,7 @@ namespace sib {
                 result += _LineBreakIf(line_break) + _NestedExceptionInfo(ne, line_break, _NextTab(line_break, tab));
             }
             catch (...) {
-                result += _LineBreakIf(line_break) + _NextTab(line_break, tab) + "{some exception}";
+                result += _LineBreakIf(line_break) + _NextTab(line_break, tab) + "{unknown exception}";
             }
 
             return result;

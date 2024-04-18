@@ -1,6 +1,4 @@
-﻿//#define SIB_DEBUG_INTEGRAL_CAST_FULL
-#define SIB_DEBUG_INTEGRAL_CAST_SIGN
-#define SIB_DEBUG_INTEGRAL_CAST_OUT
+﻿#define SIB_DEBUG_INTEGRAL_CAST_FULL
 
 #include <iostream>
 #include <stdexcept>
@@ -10,42 +8,33 @@
 #include <string>
 #include <array>
 #include <initializer_list>
-#include <functional>
-#include <unordered_map>
 
 #include "sib_matrix_nD.h"
 #include "sib_exception.h"
 #include "sib_checks.h"
 
-struct tB {};
+template<size_t N>
+constexpr auto ttt(const int(&arr)[N])
+{
+	return std::vector<int>(&arr[0], &arr[N-1]);
+}
 
-struct tD : tB {
-	char ch;
-};
-/*
-constexpr bool sc_d_i = noexcept(static_cast<int   >(std::declval<double>()));
-constexpr bool sc_i_d = noexcept(static_cast<double>(std::declval<int   >()));
+constexpr auto vvv0 = std::vector<int>{ 4,2,3,5,4,3 };
 
-constexpr bool sc_n_i = noexcept(std::enable_if_t<std::is_same_v< decltype( static_cast<int      >(std::declval<nullptr_t>()) ), int       >, std::true_type>::value);
-constexpr bool sc_i_n = noexcept(std::enable_if_t<std::is_same_v< decltype( static_cast<nullptr_t>(std::declval<int      >()) ), nullptr_t >, std::true_type>::value);
 
-constexpr bool sc_B_D = noexcept(static_cast<tD>(std::declval<tB>()));
-constexpr bool sc_D_B = noexcept(static_cast<tB>(std::declval<tD>()));
 
-constexpr bool dc_B_D = noexcept(std::enable_if_t<std::is_same_v< decltype( dynamic_cast<tD*>(std::declval<tB*>()) ), tD* >, std::true_type>::value);
-constexpr bool dc_D_B = noexcept(std::enable_if_t<std::is_same_v< decltype( dynamic_cast<tB*>(std::declval<tD*>()) ), tB* >, std::true_type>::value);
-
-constexpr bool rc_B_D = noexcept(reinterpret_cast<tD*>(std::declval<tB*>()));
-constexpr bool rc_D_B = noexcept(reinterpret_cast<tB*>(std::declval<tD*>()));
-*/
+constexpr int arr[]{ 2, 3, 5, 7 };
+constexpr auto vvv0 = std::vector<int>(4, 0);
 
 int main()
 {
-	try {
+	constexpr auto vvv1 = ttt(arr);
 
-		int i = rand() * 10000;
-		size_t st = sib::chk::integral_cast<unsigned char>(i);
-		std::cout << st << std::endl;
+	try {
+		std::array A1{ 1, 2, 4, 6, 2, 2 };
+
+		auto M1 = sib::TMatrix<int, 6>( 1, 2, 4, 6, 2, 2 );
+		//sib::TMatrix<int> M2(1, 2, 4, 6, 2, 2);
 	}
 	catch (const std::exception& exc) {
 		std::cerr << sib::ExceptionInfo(exc) << std::endl;
