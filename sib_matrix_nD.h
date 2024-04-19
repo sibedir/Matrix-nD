@@ -34,7 +34,7 @@ namespace sib {
     // nD MATRIX **********************************************************************************************************
     using dim_t = unsigned char;
 
-    template <typename type_, dim_t dimension_, class alloc_ = std::allocator<type_>>
+    template <typename type_, class alloc_ = std::allocator<type_>>
     class TMatrix {
     public:
 
@@ -52,7 +52,8 @@ namespace sib {
 
     protected:
 
-        size_type CalcTotalSize() {
+        size_type CalcTotalSize() noexcept(size_type(1))
+        {
             auto res = size_type(1);
             for (auto& s : size) { res *= s; }
             return res;
@@ -67,24 +68,24 @@ namespace sib {
 
         template <std::integral ...size_types_>
             requires (sizeof...(size_types_) == dimension_)
-        constexpr TMatrix(const size_types_&... sizes)
+        constexpr TMatrix(const size_types_&... sizes) noexcept
             : size{ chk::integral_cast<size_type>(sizes)... }
             , data(CalcTotalSize())
         {}
 
-        constexpr TMatrix(const size_type(&arr)[dimension_])
-            : size()
-            , data()
+        constexpr TMatrix(const size_type(&arr)[dimension_]) noexcept
+            : size(&arr[0], &arr[dimension_ - 1])
+            , data(CalcTotalSize())
         {}
 
         constexpr TMatrix(const size_type* arr, dim_t size_arr = dimension_)
-            : size()
-            , data()
+            : size(&arr[0], &arr[dimension_ - 1])
+            , data(CalcTotalSize())
         {}
 
-        constexpr dim_t Dimension() const noexcept { return dimension_; }
+        constexpr dim_t Dimension() const noexcept(noexcept(TSize.size())) { return size.size(); }
 
-        size_type DataSize() const noexcept(noexcept(data.size())) { return data.size(); }
+        constexpr size_type TotalDataSize() const noexcept(noexcept(TData.size())) { return data.size(); }
 
         const TData& Data() const noexcept { return data; }
 
