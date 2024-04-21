@@ -5,85 +5,109 @@
 #include <vector>
 #include <array>
 
-#include "sib_checks.h"
+#include "sib_utilities.h"
 #include "sib_exception.h"
 
 namespace sib {
 
     class EMatrix;
     class EMatrixConstruct;
-    
-    // HOLELINE ***********************************************************************************************************
-    template <typename Type>
-    class THoleLine {
-    public:
 
-        using difference_type = decltype(std::declval<Type*>() - std::declval<Type*>());
-        using size_type = std::make_unsigned_t<difference_type>;
-
-    private:
-
-        Type* space;
-
-    protected:
-
-    public:
-
-    };
-
-    // nD MATRIX **********************************************************************************************************
     using dim_t = unsigned char;
 
+    // nD MATRIX **********************************************************************************************************
     template <typename type_, class alloc_ = std::allocator<type_>>
     class TMatrix {
     public:
 
         using TData = std::vector<type_, alloc_>;
         using size_type = typename TData::size_type;
-        using TSize = std::vector<size_type>;
+            static_assert(size_type(1) == size_type(1));
+        using TSizes = std::vector<size_type>;
 
         using reference       = TData::reference      ;
         using const_reference = TData::const_reference;
 
     private:
 
-        TSize size;
+        TSizes sizes;
         TData data;
 
     protected:
 
-        size_type CalcTotalSize() noexcept(size_type(1))
+        template <std::integral ...size_types_>
+            requires (sizeof...(size_types_) < std::numeric_limits<dim_t>::max())
+        constexpr TSizes InitSizes(const size_types_&... sizes)
         {
-            auto res = size_type(1);
-            for (auto& s : size) { res *= s; }
-            return res;
+            try {
+                return TSizes{ integral::cast<size_type>(sizes)... };
+            }
+            catch (...) {
+                std::throw_with_nested(EMatrixConstruct("Error initializing matrix size."));
+            }
+        }
+
+        template <std::integral size_type_>
+        constexpr TSizes InitSizes(size_type_* arr, dim_t size_arr)
+        {
+            try {
+                auto tmp = TSizes(size_arr);
+                for (size_t i = 0; i < size_arr; ++i) {
+                    tmp[i] = integral::cast<size_type>(arr[i]);
+                }
+                return tmp;
+            }
+            catch (...) {
+                std::throw_with_nested(EMatrixConstruct("Error initializing matrix size."));
+            }
+        }
+
+
+        constexpr TData InitData()
+        {
+            try {
+                size_type total = 1;
+                for (auto& s : sizes) { total = trydo::Multiply(total, s); }
+                return TData(total);
+            }
+            catch (...) {
+                std::throw_with_nested(EMatrixConstruct("Error initializing matrix."));
+            }
+        }
+
+        size_type CalcTotalSize() noexcept
+        {
+            size_type total = 1;
+            for (auto& s : sizes) { total *= s; }
+            return total;
         }
 
     public:
 
         constexpr TMatrix() noexcept
-            : size{}
-            , data(0)
+            : sizes{}
+            , data(1)
         {}
 
         template <std::integral ...size_types_>
-            requires (sizeof...(size_types_) == dimension_)
-        constexpr TMatrix(const size_types_&... sizes) noexcept
-            : size{ chk::integral_cast<size_type>(sizes)... }
-            , data(CalcTotalSize())
+        constexpr TMatrix(const size_types_&... sizes)
+            : sizes(InitSizes(sizes...))
+            , data(InitData())
         {}
 
-        constexpr TMatrix(const size_type(&arr)[dimension_]) noexcept
-            : size(&arr[0], &arr[dimension_ - 1])
-            , data(CalcTotalSize())
+        template <std::integral size_type_>
+        constexpr TMatrix(const size_type_* arr, dim_t dimension_)
+            : sizes(InitSizes(&arr[0], dimension_))
+            , data(InitData())
         {}
 
-        constexpr TMatrix(const size_type* arr, dim_t size_arr = dimension_)
-            : size(&arr[0], &arr[dimension_ - 1])
-            , data(CalcTotalSize())
+        template <std::integral size_type_, dim_t dimension_>
+        constexpr TMatrix(const size_type_(&arr)[dimension_])
+            : sizes(InitSizes(&arr[0], dimension_))
+            , data(InitData())
         {}
 
-        constexpr dim_t Dimension() const noexcept(noexcept(TSize.size())) { return size.size(); }
+        constexpr dim_t Dimension() const noexcept(noexcept(TSizes.size())) { return sizes.size(); }
 
         constexpr size_type TotalDataSize() const noexcept(noexcept(TData.size())) { return data.size(); }
 
@@ -98,9 +122,6 @@ namespace sib {
         }
 
     };
-
-    template <typename type_, std::integral ...size_types_>
-    TMatrix(size_types_...) -> TMatrix<type_, sizeof...(size_types_)>;
 
     // SPECIFIC EXCEPTIONS **********************************************************************************************************
 

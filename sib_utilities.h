@@ -5,7 +5,8 @@
 #include <stdexcept>
 
 namespace sib {
-    namespace chk {
+
+    namespace integral {
 
 #ifdef SIB_DEBUG_INTEGRAL_CAST_FULL
 #define SIB_DEBUG_INTEGRAL_CAST_SIGN
@@ -23,10 +24,10 @@ namespace sib {
             return std::signed_integral<SourceType> and std::unsigned_integral<TargetType>;
         }
 
-        static_assert(__may_be_hit_by_sign<short  , char  >() == false);
-        static_assert(__may_be_hit_by_sign<size_t , int   >() == false);
-        static_assert(__may_be_hit_by_sign<int    , size_t>() == true );
-        static_assert(__may_be_hit_by_sign<size_t , size_t>() == false);
+        static_assert(__may_be_hit_by_sign<short, char  >() == false);
+        static_assert(__may_be_hit_by_sign<size_t, int   >() == false);
+        static_assert(__may_be_hit_by_sign<int, size_t>() == true);
+        static_assert(__may_be_hit_by_sign<size_t, size_t>() == false);
         static_assert(__may_be_hit_by_sign<uint8_t, size_t>() == false);
 #endif
 
@@ -42,18 +43,18 @@ namespace sib {
             return (SourceMAX > TargetMAX) or (SourceMIN < TargetMIN);
         }
 
-        static_assert(__may_be_hit_by_out<char     , char     >() == false);
-        static_assert(__may_be_hit_by_out<short    , size_t   >() == false);
-        static_assert(__may_be_hit_by_out<short    , char     >() == true );
-        static_assert(__may_be_hit_by_out<int      , long     >() == false);
-        static_assert(__may_be_hit_by_out<long long, int      >() == true );
-        static_assert(__may_be_hit_by_out<unsigned , long long>() == false);
-        static_assert(__may_be_hit_by_out<unsigned , long     >() == true );
+        static_assert(__may_be_hit_by_out<char, char     >() == false);
+        static_assert(__may_be_hit_by_out<short, size_t   >() == false);
+        static_assert(__may_be_hit_by_out<short, char     >() == true);
+        static_assert(__may_be_hit_by_out<int, long     >() == false);
+        static_assert(__may_be_hit_by_out<long long, int      >() == true);
+        static_assert(__may_be_hit_by_out<unsigned, long long>() == false);
+        static_assert(__may_be_hit_by_out<unsigned, long     >() == true);
 #endif
 
         // INTEGRAL_CAST ===============================================================================================
         template <std::integral TargetType, std::integral SourceType>
-        constexpr TargetType integral_cast(const SourceType& val)
+        constexpr TargetType cast(const SourceType& val) 
 #ifdef SIB_DEBUG_INTEGRAL_CAST_ANY
             noexcept (!__may_be_hit_by_sign<SourceType, TargetType>() and !__may_be_hit_by_out<SourceType, TargetType>())
 #else
@@ -63,18 +64,27 @@ namespace sib {
 #ifdef SIB_DEBUG_INTEGRAL_CAST_SIGN
             if constexpr (__may_be_hit_by_sign<SourceType, TargetType>()) {
                 if (val < 0)
-                    throw std::invalid_argument ("Integral_cast negative to unsigned.");
+                    throw std::invalid_argument("Integral::cast negative to unsigned.");
             }
 #endif
             auto result = static_cast<TargetType>(val);
 #ifdef SIB_DEBUG_INTEGRAL_CAST_OUT
             if constexpr (__may_be_hit_by_out<SourceType, TargetType>()) {
                 if (val != result)
-                    throw std::out_of_range("Out of range when integral_cast.");
+                    throw std::out_of_range("Out of range when integral::cast.");
             }
 #endif
             return result;
         }
+
+        struct MyStruct
+        {
+
+        };
+
+    }
+
+    namespace filter {
 
         template <typename T>
         using Clean = std::remove_cvref_t<T>;
@@ -100,17 +110,17 @@ namespace sib {
             std::is_same_v<Clean<T>, std::remove_extent_t<Clean<T>>[N]>
             and
             std::integral<std::remove_extent_t<Clean<T>>>;
-
-        template <typename TRes, typename TArg1, typename TArg2>
-        constexpr TRes TryMultiply(const TArg1& arg1, const TArg2& arg2) {
-            static constexpr auto MAX = std::numeric_limits<TRes>::max();
-            if (arg2 == 0 or (MAX / arg2 > arg1)) return arg1 * arg2;
+    
+    }
+        
+    namespace trydo {
+        
+        template <typename TArg1, typename TArg2, typename TRes = decltype(std::declval<TArg1>() * std::declval<TArg2>())>
+        constexpr TRes Multiply(const TArg1& arg1, const TArg2& arg2) {
+            TRes(&_MAX_)(void) = std::numeric_limits<TRes>::max;
+            if (arg2 == 0 or (_MAX_() / arg2 > arg1)) return arg1 * arg2;
             throw std::overflow_error(std::format("Overflow result in MultiplyTry({}, {}).", arg1, arg2));
         }
 
-        template <typename T>
-        constexpr T TryMultiply(const T& arg1, const T& arg2) {
-            return MultiplyTry<T, T, T>(arg1, arg2);
-        }
     }
 }

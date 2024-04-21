@@ -21,7 +21,7 @@
     <ClCompile Include="sib_exception.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="sib_checks.h">
+    <ClCompile Include="sib_utilities.h">
       <Filter>Файлы заголовков</Filter>
     </ClCompile>
   </ItemGroup>

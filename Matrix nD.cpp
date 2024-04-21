@@ -11,16 +11,21 @@
 
 #include "sib_matrix_nD.h"
 #include "sib_exception.h"
-#include "sib_checks.h"
+#include "sib_utilities.h"
 
 int main()
 {
 	try {
-		sib::TMatrix<int> M0 = (1, 2, 4, 6, 2, 2);
-		//sib::TMatrix<int> M2(1, 2, 4, 6, 2, 2);
+		auto M0 = sib::TMatrix<short>(1, 2, 4, 6, 2, 2);
 
-		int arr [] { 1, 2, 4, 6, 2, 2 };
-		//std::array A1{ 1, 2, 4, 6, 2, 2 };
+		int arr1[]{ 3, 5, 1, 6, 5, 5 };
+		auto M1 = sib::TMatrix<int>(arr1);
+
+		size_t arr2[255]{ 3, 5, 1, 5, 999999999999 };
+		auto M2 = sib::TMatrix<int>(arr2);
+
+		int arr3[]{ 32345, 52345, 1234, 5345, 9999};
+		auto M3 = sib::TMatrix<int>(arr3);
 	}
 	catch (const std::exception& exc) {
 		std::cerr << sib::ExceptionInfo(exc) << std::endl;
