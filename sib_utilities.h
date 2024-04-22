@@ -119,7 +119,7 @@ namespace sib {
         constexpr TRes Multiply(const TArg1& arg1, const TArg2& arg2) {
             TRes(&_MAX_)(void) = std::numeric_limits<TRes>::max;
             if (arg2 == 0 or (_MAX_() / arg2 > arg1)) return arg1 * arg2;
-            throw std::overflow_error(std::format("Overflow result in MultiplyTry({}, {}).", arg1, arg2));
+            throw std::overflow_error(std::format("Overflow result in Multiply({}, {}).", arg1, arg2));
         }
 
     }

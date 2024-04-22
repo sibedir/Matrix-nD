@@ -22,7 +22,7 @@ namespace sib {
 
         using TData = std::vector<type_, alloc_>;
         using size_type = typename TData::size_type;
-            static_assert(size_type(1) == size_type(1));
+            static_assert(size_type(-1) > size_type(0));
         using TSizes = std::vector<size_type>;
 
         using reference       = TData::reference      ;
@@ -48,11 +48,12 @@ namespace sib {
         }
 
         template <std::integral size_type_>
-        constexpr TSizes InitSizes(size_type_* arr, dim_t size_arr)
+        constexpr TSizes InitSizes(size_type_* arr, size_t size_arr)
         {
             try {
-                auto tmp = TSizes(size_arr);
-                for (size_t i = 0; i < size_arr; ++i) {
+                auto dimension_ = integral::cast<dim_t>(size_arr);
+                auto tmp = TSizes(dimension_);
+                for (size_t i = 0; i < dimension_; ++i) {
                     tmp[i] = integral::cast<size_type>(arr[i]);
                 }
                 return tmp;
@@ -62,12 +63,11 @@ namespace sib {
             }
         }
 
-
         constexpr TData InitData()
         {
             try {
                 size_type total = 1;
-                for (auto& s : sizes) { total = trydo::Multiply(total, s); }
+                for (auto& s : sizes) { total = trydo::Multiply<size_type, size_type, size_type>(total, s); }
                 return TData(total);
             }
             catch (...) {
@@ -96,8 +96,8 @@ namespace sib {
         {}
 
         template <std::integral size_type_>
-        constexpr TMatrix(const size_type_* arr, dim_t dimension_)
-            : sizes(InitSizes(&arr[0], dimension_))
+        constexpr TMatrix(const size_type_* arr, size_t size_arr)
+            : sizes(InitSizes(arr, size_arr))
             , data(InitData())
         {}
 
@@ -139,17 +139,4 @@ namespace sib {
         explicit EMatrixConstruct(char        const* message) noexcept : TBase(message        ) {}
     };
 
-    class EMatrixSizes : public EMatrix {
-    public:
-        using TBase = EMatrix;
-        explicit EMatrixSizes(std::string const& message) noexcept : TBase(message.c_str()) {}
-        explicit EMatrixSizes(char        const* message) noexcept : TBase(message        ) {}
-    };
-
-    class EMatrixSizesConstruct : public EMatrixSizes {
-    public:
-        using TBase = EMatrixSizes;
-        explicit EMatrixSizesConstruct(std::string const& message) noexcept : TBase(message.c_str()) {}
-        explicit EMatrixSizesConstruct(char        const* message) noexcept : TBase(message        ) {}
-    };
 }

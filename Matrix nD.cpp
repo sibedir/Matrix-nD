@@ -1,4 +1,4 @@
-﻿#define SIB_DEBUG_INTEGRAL_CAST_FULL
+﻿//#define SIB_DEBUG_INTEGRAL_CAST_FULL
 
 #include <iostream>
 #include <stdexcept>
@@ -24,8 +24,8 @@ int main()
 		size_t arr2[255]{ 3, 5, 1, 5, 999999999999 };
 		auto M2 = sib::TMatrix<int>(arr2);
 
-		int arr3[]{ 32345, 52345, 1234, 5345, 9999};
-		auto M3 = sib::TMatrix<int>(arr3);
+		int arr3[300]{ 3245, 5245, 1234, 223422343, 99999999 };
+		auto M3 = sib::TMatrix<int>(arr3, 2); // 3 - bad_alloc, 4 - vector_to_long, 5 - overflow in Multiply
 	}
 	catch (const std::exception& exc) {
 		std::cerr << sib::ExceptionInfo(exc) << std::endl;
