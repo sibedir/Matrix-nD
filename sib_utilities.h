@@ -19,20 +19,29 @@ namespace sib {
 #endif
 
 #ifdef SIB_DEBUG_INTEGRAL_CAST_SIGN
-        template <std::integral SourceType, std::integral TargetType>
+        template <std::integral TargetType, std::integral SourceType>
         constexpr bool __may_be_hit_by_sign() noexcept {
             return std::signed_integral<SourceType> and std::unsigned_integral<TargetType>;
         }
 
-        static_assert(__may_be_hit_by_sign<short, char  >() == false);
-        static_assert(__may_be_hit_by_sign<size_t, int   >() == false);
-        static_assert(__may_be_hit_by_sign<int, size_t>() == true);
-        static_assert(__may_be_hit_by_sign<size_t, size_t>() == false);
-        static_assert(__may_be_hit_by_sign<uint8_t, size_t>() == false);
+        static_assert(__may_be_hit_by_sign<char  , short  >() == false);
+        static_assert(__may_be_hit_by_sign<int   , size_t >() == false);
+        static_assert(__may_be_hit_by_sign<size_t, int    >() == true );
+        static_assert(__may_be_hit_by_sign<size_t, size_t >() == false);
+        static_assert(__may_be_hit_by_sign<size_t, uint8_t>() == false);
+#else
+        template <std::integral TargetType, std::integral SourceType>
+        constexpr bool __may_be_hit_by_sign() noexcept { return false; }
 #endif
 
+        template <std::integral TargetType, std::integral... SourceTypes>
+            requires (sizeof...(SourceTypes) > 1)
+        constexpr bool __may_be_hit_by_sign() noexcept {
+            return (__may_be_hit_by_sign<TargetType, SourceTypes>() and ...);
+        }
+
 #ifdef SIB_DEBUG_INTEGRAL_CAST_OUT
-        template <std::integral SourceType, std::integral TargetType>
+        template <std::integral TargetType, std::integral SourceType>
         constexpr bool __may_be_hit_by_out() noexcept {
             using CommonType = std::common_type_t<SourceType, TargetType>;
             constexpr CommonType SourceMAX = (std::numeric_limits<SourceType>::max)();
@@ -43,14 +52,23 @@ namespace sib {
             return (SourceMAX > TargetMAX) or (SourceMIN < TargetMIN);
         }
 
-        static_assert(__may_be_hit_by_out<char, char     >() == false);
-        static_assert(__may_be_hit_by_out<short, size_t   >() == false);
-        static_assert(__may_be_hit_by_out<short, char     >() == true);
-        static_assert(__may_be_hit_by_out<int, long     >() == false);
-        static_assert(__may_be_hit_by_out<long long, int      >() == true);
-        static_assert(__may_be_hit_by_out<unsigned, long long>() == false);
-        static_assert(__may_be_hit_by_out<unsigned, long     >() == true);
+        static_assert(__may_be_hit_by_out<char     ,char     >() == false);
+        static_assert(__may_be_hit_by_out<size_t   ,short    >() == false);
+        static_assert(__may_be_hit_by_out<char     ,short    >() == true );
+        static_assert(__may_be_hit_by_out<long     ,int      >() == false);
+        static_assert(__may_be_hit_by_out<int      ,long long>() == true );
+        static_assert(__may_be_hit_by_out<long long,unsigned >() == false);
+        static_assert(__may_be_hit_by_out<long     ,unsigned >() == true );
+#else
+        template <std::integral TargetType, std::integral SourceType>
+        constexpr bool __may_be_hit_by_out() noexcept { return false; }
 #endif
+
+        template <std::integral TargetType, std::integral... SourceTypes>
+            requires (sizeof...(SourceTypes) > 1)
+        constexpr bool __may_be_hit_by_out() noexcept {
+            return (__may_be_hit_by_out<TargetType, SourceTypes>() and ...);
+        }
 
         // INTEGRAL_CAST ===============================================================================================
         template <std::integral TargetType, std::integral SourceType>
