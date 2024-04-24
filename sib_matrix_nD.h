@@ -6,7 +6,6 @@
 #include <array>
 
 #include "sib_utilities.h"
-#include "sib_exception.h"
 
 namespace sib {
 
@@ -14,25 +13,44 @@ namespace sib {
 #define SIB_DEBUG_MATRIX_SIZE_OVERFLOW
 #endif
 
+    /*
     class EMatrix;
     class EMatrixConstruct;
+    */
 
-    using dim_t = unsigned char;
-
-    // nD MATRIX **********************************************************************************************************
-    template <dim_t dimension_, typename type_, typename alloc_ = std::allocator<type_>>
-    class TMatrix {
+    // MATRIX INTERFACE ***************************************************************************************************
+    template <typename type_, typename alloc_ = std::allocator<type_>>
+    class IMatrix {
     public:
 
-        static constexpr dim_t dimension = dimension_;
-        using value_type = type_;
         using TData = std::vector<type_, alloc_>;
-        using size_type = typename TData::size_type;
-            static_assert(size_type(-1) > size_type(0)); // I'm watching you (-_-)
-        using TSizes = std::array<size_type, dimension_>;
+        using value_type = typename TData::value_type;
+        using size_type = typename TData::size_type;            static_assert(size_type(-1) > size_type(0)); // I'm watching you (-_-)
+        using reference = typename TData::reference;
+        using const_reference = typename TData::const_reference;
 
-        using reference       = TData::reference      ;
-        using const_reference = TData::const_reference;
+    public:
+
+        virtual constexpr const TData& Data() const noexcept = 0;
+
+    };
+
+    // MATRIX nD **********************************************************************************************************
+    using dim_t = unsigned char;
+
+    template <dim_t dimension_, typename type_, typename alloc_ = std::allocator<type_>>
+    class TMatrixND : public IMatrix<type_, alloc_> {
+    public:
+
+        using TBase = IMatrix<type_, alloc_>;
+        using typename TBase::TData;
+        using typename TBase::value_type;
+        using typename TBase::size_type;
+        using typename TBase::reference;
+        using typename TBase::const_reference;
+
+        static constexpr dim_t dimension = dimension_;
+        using TSizes = std::array<size_type, dimension_>;
 
     private:
 
@@ -41,125 +59,87 @@ namespace sib {
 
     protected:
 
-        size_type CalcTotalSize() noexcept
+        constexpr size_type TotalSize()
+            #ifndef SIB_DEBUG_MATRIX_SIZE_OVERFLOW
+            noexcept
+            #endif
         {
             size_type total = 1;
-            for (auto& s : mysizes) { total *= s; }
+            for (auto& s : mysizes) {
+            #ifdef SIB_DEBUG_MATRIX_SIZE_OVERFLOW
+                total = trydo::Multiply<size_type, size_type, size_type>(total, s);
+            #else
+                total *= s;
+            #endif
+            }
             return total;
+        }
+
+        template <std::integral size_type_, size_t arr_size_, size_t... idx_>
+        [[nodiscard]]constexpr TSizes InitSizes(size_type_(&arr)[arr_size_], std::index_sequence<idx_...>)
+        {
+            return { integral::cast<size_type>(arr[idx_])... };
+        }
+
+        template <std::integral size_type_>
+        constexpr TMatrixND(const size_type_* arr, size_type arr_size)
+        {
+            for (size_t i = 0; i < dimension; ++i) {
+                mysizes[i] = integral::cast<size_type>(arr[i]);
+            }
+            mydata.resize(TotalSize());
         }
 
     public:
 
-        constexpr TMatrix() noexcept
+        constexpr TMatrixND() noexcept
             : mysizes{}
             , mydata(1)
         {}
 
         template <std::integral ...size_types_>
-            requires (sizeof...(size_types_) <= std::numeric_limits<dim_t>::max())
-        constexpr TMatrix(const size_types_&... sizes)
-        {
-            try {
-                mysizes = TSizes{ integral::cast<size_type>(sizes)... };
-            }
-            catch (...) { std::throw_with_nested(EMatrixConstruct("Error initializing matrix size.")); }
-#ifdef SIB_DEBUG_MATRIX_SIZE_OVERFLOW
-            try {
-                size_type total = 1;
-                for (auto& s : mysizes) { total = trydo::Multiply<size_type, size_type, size_type>(total, s); }
-                mydata.resize(total);
-            }
-            catch (...) { std::throw_with_nested(EMatrixConstruct("Error initializing matrix.")); }
-#else
-            mydata.resize(CalcTotalSize());
-#endif
-        }
+            requires (sizeof...(size_types_) == dimension)
+        constexpr TMatrixND(const size_types_&... sizes)
+            : mysizes{ integral::cast<size_type>(sizes)... }
+            , mydata(TotalSize())
+        {}
 
-        template <std::integral size_type_>
-        constexpr TMatrix(const size_type_* arr, size_t arr_size)
-        {
-            try {
-                for (size_t i = 0; i < dimension; ++i) {
-                    mysizes[i] = integral::cast<size_type>(arr[i]);
-                }
-            }
-            catch (...) {
-                std::throw_with_nested(EMatrixConstruct("Error initializing matrix size."));
-            }
-#ifdef SIB_DEBUG_MATRIX_SIZE_OVERFLOW
-            try {
-                size_type total = 1;
-                for (auto& s : mysizes) { total = trydo::Multiply<size_type, size_type, size_type>(total, s); }
-                mydata.resize(total);
-            }
-            catch (...) { std::throw_with_nested(EMatrixConstruct("Error initializing matrix.")); }
-#else
-            mydata.resize(CalcTotalSize());
-#endif
-        }
+        template <std::integral size_type_, size_t arr_size_>
+            requires(dimension <= arr_size_)
+        constexpr TMatrixND(const size_type_(&arr)[arr_size_])
+            : mysizes(InitSizes(arr, std::make_index_sequence<dimension_>{}))
+            , mydata(TotalSize())
+        {}
 
-        template <dim_t dimension__ = dimension, std::integral size_type_>
-        constexpr TMatrix(const size_type_(&arr)[dimension__])
-            : TMatrix::TMatrix(&arr[0])
-        {};
-
-        constexpr size_type TotalDataSize() const
-            noexcept(noexcept(mydata.size()))
-        {
-            return mydata.size();
-        }
-
-        const TData& Data() const
-            noexcept
+        constexpr const TData& Data() const
+            noexcept final override
         {
             return mydata;
         }
 
-        reference operator[](const size_type pos)
-            noexcept(noexcept(std::declval<TData>()[pos]))
-        {
-            return mydata[pos];
-        }
-
-        const_reference operator[](const size_type pos) const
-            noexcept(noexcept(std::declval<const TData>()[pos]))
-        {
-            return mydata[pos];
-        }
-
-        reference at(const size_type(&arr)[])
-        {
-        }
-
-        template <std::integral... size_types_>
-        reference operator()(size_types_... pos)
-        {
-            size_type pos_arr[]{ integral::cast<size_type>(pos)... };
-        }
-
     };
+
+    template <typename type_, std::integral ...size_types_, typename alloc_ = std::allocator<type_>>
+        requires (sizeof...(size_types_) <= std::numeric_limits<dim_t>::max())
+    TMatrixND(size_types_...) -> TMatrixND<sizeof...(size_types_), type_, alloc_>;
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral ...size_types_>
         requires (sizeof...(size_types_) <= std::numeric_limits<dim_t>::max())
-    constexpr auto MakeMatrix(const size_types_&... sizes)
+    [[nodiscard]] constexpr TMatrixND<sizeof...(size_types_), type_, alloc_> MakeMatrix(const size_types_&... sizes)
     {
-        return TMatrix<sizeof...(size_types_), type_, alloc_>(sizes...);
+        return TMatrixND<sizeof...(size_types_), type_, alloc_>(sizes...);
     }
 
-    // SPECIFIC EXCEPTIONS **********************************************************************************************************
+    template <typename type_, typename alloc_ = std::allocator<type_>, std::integral size_type_, dim_t dimension_>
+    [[nodiscard]] constexpr auto MakeMatrix(const size_type_(&arr)[dimension_])
+    {
+        return TMatrixND<dimension_, type_, alloc_>(arr);
+    }
 
-    class EMatrix : public std::runtime_error {
-    public:
-        using TBase = std::runtime_error;
-        explicit EMatrix(std::string const& message) noexcept : TBase(message.c_str()) {}
-        explicit EMatrix(char        const* message) noexcept : TBase(message        ) {}
-    };
-
-    class EMatrixConstruct : public EMatrix {
-    public:
-        using TBase = EMatrix;
-        explicit EMatrixConstruct(std::string const& message) noexcept : TBase(message.c_str()) {}
-        explicit EMatrixConstruct(char        const* message) noexcept : TBase(message        ) {}
-    };
-
+    template <dim_t dimension_, typename type_, typename alloc_ = std::allocator<type_>, std::integral size_type_, size_t arr_size_>
+        requires (dimension_ <= arr_size_)
+    [[nodiscard]] constexpr auto MakeMatrix(const size_type_(&arr)[arr_size_])
+    {
+        return TMatrixND<dimension_, type_, alloc_>(arr);
+    }
 }
