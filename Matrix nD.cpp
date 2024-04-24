@@ -21,7 +21,6 @@ constexpr auto QQQ() {
 int main()
 {
 	try {
-		//std::make_tuple
 		{
 			auto M1 = sib::MakeMatrix<short>(1, 2, 4, 6, 2, 2);
 			auto M2 = sib::TMatrixND<6, short>(1, 2, 4, 6, 2, 2);

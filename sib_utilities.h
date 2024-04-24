@@ -2,7 +2,6 @@
 
 #include <limits>
 #include <format>
-#include <stdexcept>
 
 namespace sib {
 
@@ -94,11 +93,6 @@ namespace sib {
 #endif
             return result;
         }
-
-        struct MyStruct
-        {
-
-        };
 
     }
 
