@@ -36,8 +36,6 @@ namespace sib {
 
     private:
 
-        TData mydata;
-
         template <std::integral arg_type_, size_t... idx_>
         [[nodiscard]] constexpr TData InitData(arg_type_* arr, std::index_sequence<idx_...>)
         {
@@ -46,20 +44,7 @@ namespace sib {
 
     protected:
 
-        constexpr value_type Total()
-            noexcept(!__may_be_hit_by_dim_total_overflow())
-        {
-            value_type total = 1;
-            for (auto& s : mysizes) {
-                if constexpr (__may_be_hit_by_dim_total_overflow()) {
-                    total = trydo::Multiply<size_type, size_type, size_type>(total, s);
-                }
-                else {
-                    total *= s;
-                }
-            }
-            return total;
-        }
+        TData mydata;
 
         template <std::integral arg_type_>
         [[nodiscard]] constexpr TData InitData(arg_type_* arr)
@@ -95,8 +80,23 @@ namespace sib {
         template <std::integral arg_type_, size_t arr_size_>
             requires(dimension <= arr_size_)
         constexpr TDimParam(const std::array<arg_type_, arr_size_>& arr)
-            : mysizes(InitData(&arr[0]))
+            : mydata(InitData(&arr[0]))
         {}
+
+        constexpr value_type Total()
+            noexcept(!__may_be_hit_by_dim_total_overflow())
+        {
+            value_type total = 1;
+            for (auto& s : mydata) {
+                if constexpr (__may_be_hit_by_dim_total_overflow()) {
+                    total = trydo::Multiply<value_type, value_type, value_type>(total, s);
+                }
+                else {
+                    total *= s;
+                }
+            }
+            return total;
+        }
 
     };
 
@@ -111,71 +111,36 @@ namespace sib {
         using reference       = typename TData::reference      ;
         using const_reference = typename TData::const_reference;
 
+    protected:
+
+        TData mydata;
+
     public:
 
-        virtual constexpr const TData&  Data() const &  = 0;
-        virtual constexpr       TData&& Data()       && = 0;
+        constexpr const TData&  Data() const &  noexcept { return           mydata ; }
+        constexpr       TData&& Data()       && noexcept { return std::move(mydata); }
 
     };
 
     // MATRIX nD **********************************************************************************************************
     template <dim_t dimension_, typename type_, typename alloc_ = std::allocator<type_>>
-    class TMatrixND : public IMatrix<type_, alloc_> {
+    class TMatrixND 
+        : public TDimParam<dimension_, typename IMatrix<type_, alloc_>::size_type>
+        , public IMatrix<type_, alloc_> {
     public:
 
-        using TBase = IMatrix<type_, alloc_>;
-        using typename TBase::TData          ;
-        using typename TBase::value_type     ;
-        using typename TBase::size_type      ;
-        using typename TBase::reference      ;
-        using typename TBase::const_reference;
+        using IMatrix = IMatrix<type_, alloc_>;
+        using typename IMatrix::TData          ;
+        using typename IMatrix::value_type     ;
+        using typename IMatrix::size_type      ;
+        using typename IMatrix::reference      ;
+        using typename IMatrix::const_reference;
 
         static constexpr dim_t dimension = dimension_;
-        using TSizes = std::array<size_type, dimension>;
+        using TSizes = TDimParam<dimension, size_type>;
 
-    private:
-
-        TSizes mysizes;
-        TData mydata;
-
-        template <std::integral size_type_, size_t... idx_>
-        [[nodiscard]] constexpr TSizes InitSizes(size_type_* arr, std::index_sequence<idx_...>)
-        {
-            return { integral::cast<size_type>(arr[idx_])... };
-        }
-
-    protected:
-
-        constexpr size_type TotalSize()
-            #ifndef SIB_DEBUG_MATRIX_SIZE_OVERFLOW
-            noexcept
-            #endif
-        {
-            size_type total = 1;
-            for (auto& s : mysizes) {
-            #ifdef SIB_DEBUG_MATRIX_SIZE_OVERFLOW
-                total = trydo::Multiply<size_type, size_type, size_type>(total, s);
-            #else
-                total *= s;
-            #endif
-            }
-            return total;
-        }
-
-        template <std::integral size_type_>
-        [[nodiscard]] constexpr TSizes InitSizes(size_type_* arr)
-        {
-            return InitSizes(arr, std::make_index_sequence<dimension>{});
-        }
-
-        template <std::integral size_type_>
-        constexpr TMatrixND(const size_type_* arr, size_type arr_size)
-        {
-            for (size_t i = 0; i < dimension; ++i) {
-                mysizes[i] = integral::cast<size_type>(arr[i]);
-            }
-            mydata.resize(TotalSize());
-        }
+        TSizes& mysizes = TSizes.mydata;
+        TData&  mysizes = TData. mydata;
 
     public:
 
@@ -187,26 +152,23 @@ namespace sib {
         template <std::integral ...size_types_>
             requires (sizeof...(size_types_) == dimension)
         constexpr TMatrixND(const size_types_&... sizes)
-            : mysizes{ integral::cast<size_type>(sizes)... }
-            , mydata(TotalSize())
+            : TSizes{ integral::cast<size_type>(sizes)... }
+            , TData(mysizes.Total())
         {}
 
         template <std::integral size_type_, size_t arr_size_>
             requires(dimension <= arr_size_)
         constexpr TMatrixND(const size_type_(&arr)[arr_size_])
-            : mysizes(InitSizes(&arr[0]))
-            , mydata(TotalSize())
+            : TSizes(arr)
+            , TData(mysizes.Total())
         {}
 
         template <std::integral size_type_, size_t arr_size_>
             requires(dimension <= arr_size_)
         constexpr TMatrixND(const std::array<size_type_, arr_size_>& arr)
-            : mysizes(InitSizes(&arr[0]))
-            , mydata(TotalSize())
+            : TSizes(arr)
+            , TData(mysizes.Total())
         {}
-
-        constexpr const TData&  Data() const &  noexcept final override { return           mydata ; }
-        constexpr       TData&& Data()       && noexcept final override { return std::move(mydata); }
 
     };
 
