@@ -23,8 +23,7 @@ int main()
 	try {
 		{
 			auto M1 = sib::MakeMatrix<short>(1, 2, 4, 6, 2, 2);
-			auto M2 = sib::TMatrixND<6, short>(1, 2, 4, 6, 2, 2);
-
+			auto M2 = sib::TMatrixND<short, 6>(1, 2, 4, 6, 2, 2);
 			auto& M3 = M1;
 			auto M4 = M1;
 			auto M5 = std::move(M1);
@@ -33,15 +32,14 @@ int main()
 		}{
 			int arr[]{ 3, 5, 1, 6, 5 };
 			auto M1 = sib::MakeMatrix<int>(arr);
-			auto M2 = sib::TMatrixND<5, int>(arr);
+			auto M2 = sib::TMatrixND<int, 5>(arr);
 		}{
 			std::array arr{ 1, 2, 3, 2, 1 };
 			auto M1 = sib::MakeMatrix<int>(arr);
-			auto M2 = sib::TMatrixND<5, int>(arr);
+			auto M2 = sib::TMatrixND<int, 5>(arr);
 		}{
 			int arr[]{ 2, 3, 4, 5 };
-			sib::TMatrixND<4, int> M;
-			M = arr;
+			sib::TMatrixND<int, 4> M =arr;
 
 			int i = 10;
 			std::vector<int> V;
@@ -51,10 +49,10 @@ int main()
 			auto M = sib::MakeMatrix<int>(arr);
 		}{
 			int arr[300]{ 3245, 5245, 1234, 223422343, 99999999 };
-			auto M1 = sib::MakeMatrix<2, int>(arr); // 3 - bad_alloc, 4 - vector_to_long, 5 - overflow in Multiply
-			auto M2 = sib::TMatrixND<2, int>(arr); // 3 - bad_alloc, 4 - vector_to_long, 5 - overflow in Multiply
+			auto M1 = sib::MakeMatrix<int, 2>(arr); // 3 - bad_alloc, 4 - vector_to_long, 5 - overflow in Multiply
+			auto M2 = sib::TMatrixND<int, 2>(arr); // 3 - bad_alloc, 4 - vector_to_long, 5 - overflow in Multiply
 		}{
-			sib::TMatrixND<3, int> M(3, 2, 3);
+			sib::TMatrixND<int, 3> M(3, 2, 3);
 			auto M1 = M;
 			auto& M2 = M;
 			decltype(auto) M3 = std::move(M);
@@ -67,25 +65,27 @@ int main()
 			auto Mp = &M;
 		}{
 			constexpr auto s0 = QQQ();
-			constexpr auto s1 = sib::TMatrixND<3, int>(4, 5, 3).Data().size();
+			constexpr auto s1 = sib::TMatrixND<int, 3>(4, 5, 3).Data().size();
 			constexpr int arr[]{ 3, 5, 2 };
 			constexpr auto s2 = std::move(sib::MakeMatrix<int>(arr)).Data().size();
 		}{
 			auto M = sib::MakeMatrix<short>(1, 2, 4, 6, 2, 2);
-			sib::IMatrix<short>& Mref = M;
-			sib::IMatrix<short>* Mptr = &M;
+			sib::TMatrix<short>& Mref = M;
+			sib::TMatrix<short>* Mptr = &M;
 
 			auto V = Mref.Data();
 			auto& Vref = Mref.Data();
 			const auto& V2ref = sib::MakeMatrix<short>(3, 3, 3).Data();
 			auto V3 = sib::MakeMatrix<short>(3, 3, 3).Data();
 			auto V4 = std::move(M).Data();
-			//decltype(auto) V3 = sib::MakeMatrix<short>(3, 3, 3).Data();
-			//decltype(auto) V4 = std::move(M).Data();
+			decltype(auto) V5 = std::move(sib::MakeMatrix<short>(3, 3, 3).Data());
+			decltype(auto) V6 = std::move(M).Data();
 
-			decltype(auto) V5 = std::move(int(4));
+			decltype(auto) asdfas = std::move(int(4));
 		}{
 			auto M = sib::MakeMatrix<bool>(2, 4, 6, 2);
+		}{
+			auto DP = sib::TDimParam<unsigned, 4>(2, 4, 6, 2);
 		}
 	}
 	catch (const std::exception& exc) {
