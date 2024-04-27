@@ -23,7 +23,7 @@ int main()
 	try {
 		{
 			auto M1 = sib::MakeMatrix<short>(1, 2, 4, 6, 2, 2);
-			auto M2 = sib::TMatrixND<short, 6>(1, 2, 4, 6, 2, 2);
+			auto M2 = sib::TMatrixND<short, 6>{ 1, 2, 4, 6, 2, 2 };
 			auto& M3 = M1;
 			auto M4 = M1;
 			auto M5 = std::move(M1);
@@ -86,6 +86,10 @@ int main()
 			auto M = sib::MakeMatrix<bool>(2, 4, 6, 2);
 		}{
 			auto DP = sib::TDimParam<unsigned, 4>(2, 4, 6, 2);
+		}{
+			int i;
+			auto M = sib::TMatrixND<int, 3>{ 2, 3, i };
+			auto DP = sib::TDimParam<unsigned, 3>{ 2, 3, i };
 		}
 	}
 	catch (const std::exception& exc) {

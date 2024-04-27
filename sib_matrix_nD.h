@@ -35,17 +35,16 @@ namespace sib {
         using value_type = type_;
         using TData = std::array<value_type, dimension>;
 
-    private:
+    protected:
+
+        TData mydata;
 
         template <std::integral arg_type_, size_t... idx_>
+            requires (sizeof...(idx_) == dimension)
         [[nodiscard]] constexpr TData InitData(arg_type_* arr, std::index_sequence<idx_...>)
         {
             return { integral::cast<value_type>(arr[idx_])... };
         }
-
-    protected:
-
-        TData mydata;
 
         template <std::integral arg_type_>
         [[nodiscard]] constexpr TData InitData(arg_type_* arr)
@@ -66,9 +65,13 @@ namespace sib {
             : mydata{}
         {}
 
+        constexpr TDimParam(std::initializer_list<value_type> initlist)
+            : mydata{ InitData(initlist.begin(), initlist.size())}
+        {}
+
         template <std::integral ...args_types_>
             requires (sizeof...(args_types_) == dimension)
-        constexpr explicit TDimParam(const args_types_&... args)
+        constexpr TDimParam(const args_types_&... args)
             : mydata{ integral::cast<value_type>(args)... }
         {}
 
@@ -82,6 +85,11 @@ namespace sib {
             requires(dimension <= arr_size_)
         constexpr TDimParam(const std::array<arg_type_, arr_size_>& arr)
             : mydata(InitData(&arr[0]))
+        {}
+
+        template <std::integral arg_type_>
+        constexpr TDimParam(const std::vector<arg_type_>& vec)
+            : mydata(InitData(vec.data(), vec.size()))
         {}
 
     protected:
@@ -103,6 +111,18 @@ namespace sib {
 
     };
 
+    template <std::integral arg_type_, dim_t dimension_>
+    [[nodiscard]] constexpr auto MakeDimParam(const std::vector<arg_type_>& vec)
+    {
+        return TDimParam<arg_type_, dimension_>(vec);
+    }
+
+    template <std::integral arg_type_>
+    [[nodiscard]] constexpr auto MakeDimParam(const std::vector<arg_type_>& vec, dim_t dimension_)
+    {
+        return TDimParam<arg_type_, dimension_>(vec);
+    }
+
     // MATRIX INTERFACE ***************************************************************************************************
     template <typename type_, typename alloc_ = std::allocator<type_>>
     class TMatrix {
@@ -123,8 +143,8 @@ namespace sib {
 
     public:
 
-        constexpr const TData&  Data() const &  noexcept { return           mydata ; }
-        constexpr       TData&& Data()       && noexcept { return std::move(mydata); }
+        constexpr TData const & Data() const & noexcept { return           mydata ; }
+        constexpr TData      && Data()      && noexcept { return std::move(mydata); }
 
     };
 
@@ -151,10 +171,16 @@ namespace sib {
             , TMatrix(1)
         {}
 
+        constexpr TMatrixND(std::initializer_list<size_type> initlist)
+            : TSizes(initlist)
+            , TMatrix(TSizes::Total())
+        {
+        }
+
         template <std::integral ...size_types_>
             requires (sizeof...(size_types_) == dimension)
         constexpr TMatrixND(const size_types_&... sizes)
-            : TSizes{ integral::cast<size_type>(sizes)... }
+            : TSizes(sizes...)
             , TMatrix(TSizes::Total())
         {}
 
@@ -200,13 +226,6 @@ namespace sib {
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral size_type_, dim_t dimension_>
     [[nodiscard]] constexpr auto MakeMatrix(const std::array<size_type_, dimension_>& arr)
-    {
-        return TMatrixND<type_, dimension_, alloc_>(arr);
-    }
-
-    template <dim_t dimension_, typename type_, typename alloc_ = std::allocator<type_>, std::integral size_type_, size_t arr_size_>
-        requires (dimension_ <= arr_size_)
-    [[nodiscard]] constexpr auto MakeMatrix(const std::array<size_type_, arr_size_>& arr)
     {
         return TMatrixND<type_, dimension_, alloc_>(arr);
     }
