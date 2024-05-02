@@ -24,11 +24,13 @@ namespace sib {
         #endif
     }
 
-    // DIMENSION PARAM ****************************************************************************************************
+    // DIMENSION PARAMETERS ****************************************************************************************************
     using dim_t = unsigned char;
 
+    template <std::unsigned_integral type_> class TDimParamBase {};
+
     template <std::unsigned_integral type_, dim_t dimension_>
-    class TDimParam {
+    class TDimParam : TDimParamBase<type_> {
     public:
 
         static constexpr dim_t dimension = dimension_;
@@ -75,6 +77,10 @@ namespace sib {
             : mydata{ integral::cast<value_type>(args)... }
         {}
 
+        constexpr TDimParam(const type_(&arr)[dimension_])
+            : mydata(InitData(&arr[0]))
+        {}
+
         template <std::integral arg_type_, size_t arr_size_>
             requires(dimension <= arr_size_)
         constexpr TDimParam(const arg_type_(&arr)[arr_size_])
@@ -94,7 +100,7 @@ namespace sib {
 
     protected:
 
-        constexpr value_type Total()
+        constexpr value_type Total() const
             noexcept(!__may_be_hit_by_dim_total_overflow())
         {
             value_type total = 1;
@@ -109,18 +115,34 @@ namespace sib {
             return total;
         }
 
+    public:
+        
+        constexpr TData const & Data() const & noexcept { return           mydata ; }
+      //constexpr TData      && DimData()      && noexcept { return std::move(mydata); }
+
+        template <typename other_type_>
+        constexpr bool operator==(const TDimParam<other_type_, dimension>& other) const
+        {
+            auto l = mydata.begin();
+            auto r = other.Data().begin();
+            for (; l != mydata.end(); ++l, ++r) {
+                if (*l != *r) return false;
+            }
+            return true;
+        }
+
     };
 
-    template <std::integral arg_type_, dim_t dimension_>
+    template <std::unsigned_integral type_, dim_t dimension_, std::integral arg_type_>
     [[nodiscard]] constexpr auto MakeDimParam(const std::vector<arg_type_>& vec)
     {
-        return TDimParam<arg_type_, dimension_>(vec);
+        return TDimParam<type_, dimension_>(vec);
     }
-
-    template <std::integral arg_type_>
-    [[nodiscard]] constexpr auto MakeDimParam(const std::vector<arg_type_>& vec, dim_t dimension_)
+    
+    template <dim_t dimension_, std::integral arg_type_>
+    [[nodiscard]] constexpr auto MakeDimParam(const std::vector<arg_type_>& vec)
     {
-        return TDimParam<arg_type_, dimension_>(vec);
+        return TDimParam<std::make_unsigned_t<arg_type_>, dimension_>(vec);
     }
 
     // MATRIX INTERFACE ***************************************************************************************************
@@ -164,6 +186,7 @@ namespace sib {
 
         static constexpr dim_t dimension = dimension_;
         using TSizes = TDimParam<size_type, dimension>;
+
     public:
 
         constexpr TMatrixND() noexcept
@@ -183,20 +206,36 @@ namespace sib {
             : TSizes(sizes...)
             , TMatrix(TSizes::Total())
         {}
-
+        /*
         template <std::integral size_type_, size_t arr_size_>
             requires(dimension <= arr_size_)
         constexpr TMatrixND(const size_type_(&arr)[arr_size_])
             : TSizes(arr)
             , TMatrix(TSizes::Total())
         {}
-
+        */
         template <std::integral size_type_, size_t arr_size_>
             requires(dimension <= arr_size_)
         constexpr TMatrixND(const std::array<size_type_, arr_size_>& arr)
             : TSizes(arr)
             , TMatrix(TSizes::Total())
         {}
+
+        template <std::integral arg_type_>
+        constexpr TMatrixND(const std::vector<arg_type_>& vec)
+            : TSizes(vec)
+            , TMatrix(TSizes::Total())
+        {}
+
+        constexpr TMatrixND(const TDimParam<size_type, dimension_>& dimparam)
+            : TSizes(dimparam)
+            , TMatrix(TSizes::Total())
+        {}
+
+    public:
+
+        constexpr TData const & Data() const & noexcept { return           TMatrix::Data() ; }
+        //constexpr TData      && Data()      && noexcept { return std::move(TMatrix::Data()); }
 
     };
 
@@ -230,4 +269,15 @@ namespace sib {
         return TMatrixND<type_, dimension_, alloc_>(arr);
     }
 
+    template <std::unsigned_integral type_, dim_t dimension_, std::integral arg_type_>
+    [[nodiscard]] constexpr auto MakeMatrix(const std::vector<arg_type_>& vec)
+    {
+        return TMatrixND<type_, dimension_>(vec);
+    }
+
+    template <dim_t dimension_, std::integral arg_type_>
+    [[nodiscard]] constexpr auto MakeMatrix(const std::vector<arg_type_>& vec)
+    {
+        return TMatrixND<std::make_unsigned_t<arg_type_>, dimension_>(vec);
+    }
 }

@@ -18,8 +18,38 @@ constexpr auto QQQ() {
 	return sib::MakeMatrix<int>( 4, 2, 3, 5, 4, 3 ).Data().size();
 }
 
+class Base1 {
+private:
+    int data;
+public:
+    int const & Data() const { return data; }
+};
+
+class Base2 {
+private:
+    std::vector<int> data;
+public:
+    std::vector<int> const & Data() const { return           data ; }
+    std::vector<int>      && Data() const { return std::move(data); }
+};
+
+class Derived: public Base1, public Base2 {
+public:
+    std::vector<int> const & Data() const { return           Base2::Data(); }
+    std::vector<int>      && Data() const { return std::move(Base2::Data()); }
+};
+
+constexpr auto WWW() {
+	return Derived().Data().size();
+}
+
 int main()
 {
+	Derived obj{};
+	auto d1 = obj.Data();
+	decltype(auto) d2 = Derived().Data();
+	decltype(auto) d3 = WWW();
+
 	try {
 		{
 			auto M1 = sib::MakeMatrix<short>(1, 2, 4, 6, 2, 2);
@@ -27,7 +57,10 @@ int main()
 			auto& M3 = M1;
 			auto M4 = M1;
 			auto M5 = std::move(M1);
-	    }{
+		
+			constexpr auto DP1 = sib::TDimParam<unsigned, 6>(1, 2, 4, 6, 2, 2);
+			//constexpr auto DP2 = sib::MakeDimParam(1, 2, 4, 6, 2, 2);
+		}{
 			constexpr auto val = QQQ();
 		}{
 			int arr[]{ 3, 5, 1, 6, 5 };
@@ -38,12 +71,21 @@ int main()
 			auto M1 = sib::MakeMatrix<int>(arr);
 			auto M2 = sib::TMatrixND<int, 5>(arr);
 		}{
-			int arr[]{ 2, 3, 4, 5 };
-			sib::TMatrixND<int, 4> M =arr;
+			constexpr size_t arr1[]{ 2, 3, 4, 5 };
+			constexpr sib::TDimParam DP1 = arr1;
 
-			int i = 10;
-			std::vector<int> V;
-			//V = i;
+			constexpr size_t arr2[]{ 2, 3, 4, 6 };
+			constexpr auto DP2 = sib::TDimParam<unsigned, 4>(arr2);
+
+			constexpr unsigned char arr3[]{ 2, 3, 4, 5 };
+			constexpr sib::TDimParam DP3 = arr3;
+
+			constexpr auto b1 = DP1 == DP2;
+			constexpr auto b2 = DP1 == DP3;
+			constexpr auto b3 = DP2 == DP3;
+
+			auto M1 = sib::TMatrixND<int, 4>(arr1);
+			auto M2 = sib::TMatrixND<int, 4>(DP1);
 		}{
 			size_t arr[255]{ 3, 5, 1, 5, 999999999999 };
 			auto M = sib::MakeMatrix<int>(arr);
@@ -87,19 +129,35 @@ int main()
 		}{
 			auto DP = sib::TDimParam<unsigned, 4>(2, 4, 6, 2);
 		}{
-			int i;
-			auto M = sib::TMatrixND<int, 3>{ 2, 3, i };
-			auto DP = sib::TDimParam<unsigned, 3>{ 2, 3, i };
+			int i = 4;
+			//auto M = sib::TMatrixND<int, 3>{ 2, -3, i };
+			//auto DP = sib::TDimParam<unsigned, 3>{ 2, -3, i };
+			auto M = sib::TMatrixND<int, 3>( 2, 3, i );
+			auto DP = sib::TDimParam<unsigned, 3>( 2, 3, i );
+		}{
+			auto vec1 = std::vector{ 2, 3, 4 };
+			auto DP1 = sib::TDimParam<unsigned, 3>(vec1);
+			auto DP2 = sib::MakeDimParam<3>(vec1);
+			auto M1 = sib::TMatrixND<unsigned, 3>(vec1);
+			auto M2 = sib::MakeMatrix<3>(vec1);
+			auto vec2 = std::vector{ 2, 3, 4 };
+			auto DP3 = sib::TDimParam<unsigned char, 3>(vec2);
+			auto DP4 = sib::MakeDimParam<unsigned char, 3>(vec2);
+			auto M3 = sib::TMatrixND<unsigned char, 3>(vec1);
+			auto M4 = sib::MakeMatrix<unsigned char, 3>(vec1);
 		}
 	}
 	catch (const std::exception& exc) {
 		std::cerr << sib::ExceptionInfo(exc) << std::endl;
 	}
 	
+	goto THE_END;
+
 	{
 		try {
 			int qqq = -10;
-			auto hfg = sib::integral::cast<unsigned short>(qqq);
+			auto www = sib::integral::cast<unsigned short>(qqq);
+			std::cout << www << std::endl;
 		}
 		catch (const std::exception& exc) {
 			std::cerr << sib::ExceptionInfo(exc) << std::endl;
@@ -115,7 +173,7 @@ int main()
 		}
 	}
 	
-//THE_END:
+THE_END:
 	std::cout << std::endl << std::endl;
 	std::cout << "  - THE END -  " << std::endl;
 	std::cout << "press [Enter]...";
