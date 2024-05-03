@@ -18,38 +18,8 @@ constexpr auto QQQ() {
 	return sib::MakeMatrix<int>( 4, 2, 3, 5, 4, 3 ).Data().size();
 }
 
-class Base1 {
-private:
-    int data;
-public:
-    int const & Data() const { return data; }
-};
-
-class Base2 {
-private:
-    std::vector<int> data;
-public:
-    std::vector<int> const & Data() const { return           data ; }
-    std::vector<int>      && Data() const { return std::move(data); }
-};
-
-class Derived: public Base1, public Base2 {
-public:
-    std::vector<int> const & Data() const { return           Base2::Data(); }
-    std::vector<int>      && Data() const { return std::move(Base2::Data()); }
-};
-
-constexpr auto WWW() {
-	return Derived().Data().size();
-}
-
 int main()
 {
-	Derived obj{};
-	auto d1 = obj.Data();
-	decltype(auto) d2 = Derived().Data();
-	decltype(auto) d3 = WWW();
-
 	try {
 		{
 			auto M1 = sib::MakeMatrix<short>(1, 2, 4, 6, 2, 2);
@@ -58,7 +28,7 @@ int main()
 			auto M4 = M1;
 			auto M5 = std::move(M1);
 		
-			constexpr auto DP1 = sib::TDimParam<unsigned, 6>(1, 2, 4, 6, 2, 2);
+			constexpr auto DP1 = sib::TMultiDimParam<unsigned, 6>(1, 2, 4, 6, 2, 2);
 			//constexpr auto DP2 = sib::MakeDimParam(1, 2, 4, 6, 2, 2);
 		}{
 			constexpr auto val = QQQ();
@@ -72,13 +42,13 @@ int main()
 			auto M2 = sib::TMatrixND<int, 5>(arr);
 		}{
 			constexpr size_t arr1[]{ 2, 3, 4, 5 };
-			constexpr sib::TDimParam DP1 = arr1;
+			constexpr sib::TMultiDimParam DP1 = arr1;
 
 			constexpr size_t arr2[]{ 2, 3, 4, 6 };
-			constexpr auto DP2 = sib::TDimParam<unsigned, 4>(arr2);
+			constexpr auto DP2 = sib::TMultiDimParam<unsigned, 4>(arr2);
 
 			constexpr unsigned char arr3[]{ 2, 3, 4, 5 };
-			constexpr sib::TDimParam DP3 = arr3;
+			constexpr sib::TMultiDimParam DP3 = arr3;
 
 			constexpr auto b1 = DP1 == DP2;
 			constexpr auto b2 = DP1 == DP3;
@@ -127,24 +97,28 @@ int main()
 		}{
 			auto M = sib::MakeMatrix<bool>(2, 4, 6, 2);
 		}{
-			auto DP = sib::TDimParam<unsigned, 4>(2, 4, 6, 2);
+			auto DP = sib::TMultiDimParam<unsigned, 4>(2, 4, 6, 2);
 		}{
 			int i = 4;
 			//auto M = sib::TMatrixND<int, 3>{ 2, -3, i };
 			//auto DP = sib::TDimParam<unsigned, 3>{ 2, -3, i };
 			auto M = sib::TMatrixND<int, 3>( 2, 3, i );
-			auto DP = sib::TDimParam<unsigned, 3>( 2, 3, i );
+			auto DP = sib::TMultiDimParam<unsigned, 3>( 2, 3, i );
 		}{
 			auto vec1 = std::vector{ 2, 3, 4 };
-			auto DP1 = sib::TDimParam<unsigned, 3>(vec1);
-			auto DP2 = sib::MakeDimParam<3>(vec1);
+			auto DP1 = sib::TMultiDimParam<unsigned, 3>(vec1);
+			auto DP2 = sib::Make_MultiDimParam<3>(vec1);
 			auto M1 = sib::TMatrixND<unsigned, 3>(vec1);
-			auto M2 = sib::MakeMatrix<3>(vec1);
+			auto M2 = sib::MakeMatrix<unsigned>(vec1);
 			auto vec2 = std::vector{ 2, 3, 4 };
-			auto DP3 = sib::TDimParam<unsigned char, 3>(vec2);
-			auto DP4 = sib::MakeDimParam<unsigned char, 3>(vec2);
-			auto M3 = sib::TMatrixND<unsigned char, 3>(vec1);
-			auto M4 = sib::MakeMatrix<unsigned char, 3>(vec1);
+			auto DP3 = sib::TMultiDimParam<unsigned char, 3>(vec2);
+			auto DP4 = sib::Make_MultiDimParam<unsigned char, 3>(vec2);
+			auto M3 = sib::TMatrixND<char, 3>(vec1);
+			auto M4 = sib::MakeMatrix<char>(vec1);
+		}{
+			auto vec = std::vector{ 2, 3, 4 };
+			auto M = sib::MakeMatrix<int>(vec);
+			std::cout << M->Data().size() << std::endl;
 		}
 	}
 	catch (const std::exception& exc) {
