@@ -31,8 +31,6 @@ int main()
 			constexpr auto DP1 = sib::TMultiDimParam<unsigned, 6>(1, 2, 4, 6, 2, 2);
 			//constexpr auto DP2 = sib::MakeDimParam(1, 2, 4, 6, 2, 2);
 		}{
-			constexpr auto val = QQQ();
-		}{
 			int arr[]{ 3, 5, 1, 6, 5 };
 			auto M1 = sib::MakeMatrix<int>(arr);
 			auto M2 = sib::TMatrixND<int, 5>(arr);
@@ -106,15 +104,17 @@ int main()
 			auto DP = sib::TMultiDimParam<unsigned, 3>( 2, 3, i );
 		}{
 			auto vec1 = std::vector{ 2, 3, 4 };
+			auto DP0 = sib::MakeMultiDimParam<3>(vec1);
 			auto DP1 = sib::TMultiDimParam<unsigned, 3>(vec1);
-			auto DP2 = sib::Make_MultiDimParam<3>(vec1);
+			auto DP2 = sib::MakeMultiDimParam<3>(vec1);
 			auto M1 = sib::TMatrixND<unsigned, 3>(vec1);
 			auto M2 = sib::MakeMatrix<unsigned>(vec1);
 			auto vec2 = std::vector{ 2, 3, 4 };
 			auto DP3 = sib::TMultiDimParam<unsigned char, 3>(vec2);
-			auto DP4 = sib::Make_MultiDimParam<unsigned char, 3>(vec2);
+			auto DP4 = sib::MakeMultiDimParam<unsigned char, 3>(vec2);
 			auto M3 = sib::TMatrixND<char, 3>(vec1);
 			auto M4 = sib::MakeMatrix<char>(vec1);
+			auto M5 = sib::MakeMatrix<char>(vec1, 2);
 		}{
 			auto vec = std::vector{ 2, 3, 4 };
 			auto M = sib::MakeMatrix<int>(vec);
@@ -122,7 +122,7 @@ int main()
 		}
 	}
 	catch (const std::exception& exc) {
-		std::cerr << sib::ExceptionInfo(exc) << std::endl;
+		std::cerr << sib::exception::Info(exc) << std::endl;
 	}
 	
 	goto THE_END;
@@ -134,7 +134,7 @@ int main()
 			std::cout << www << std::endl;
 		}
 		catch (const std::exception& exc) {
-			std::cerr << sib::ExceptionInfo(exc) << std::endl;
+			std::cerr << sib::exception::Info(exc) << std::endl;
 		}
 	}
 	{
@@ -143,7 +143,7 @@ int main()
 			auto hfg = sib::integral::cast<unsigned short>(qqq);
 		}
 		catch (const std::exception& exc) {
-			std::cerr << sib::ExceptionInfo(exc) << std::endl;
+			std::cerr << sib::exception::Info(exc) << std::endl;
 		}
 	}
 	

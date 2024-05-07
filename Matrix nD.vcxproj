@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="Matrix nD.cpp" />
     <ClCompile Include="sib_exception.cpp" />
+    <ClCompile Include="sib_matrix_nD.cpp" />
     <ClCompile Include="sib_utilities.h" />
   </ItemGroup>
   <ItemGroup>

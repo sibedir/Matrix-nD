@@ -63,14 +63,14 @@ namespace sib {
             return result;
         }
 
-    }
+        std::string Info(const std::exception& exc) {
+            return exception::_ExceptionInfo(exc);
+        }
 
-    std::string sib::ExceptionInfo(const std::exception& exc) {
-        return exception::_ExceptionInfo(exc);
-    }
+        std::string exception::AsString(const std::exception& exc) {
+            return exception::_ExceptionInfo(exc, false);
+        }
 
-    std::string sib::ExceptionAsString(const std::exception& exc) {
-        return exception::_ExceptionInfo(exc, false);
     }
 
 }

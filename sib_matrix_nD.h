@@ -134,13 +134,13 @@ namespace sib {
     };
 
     template <std::unsigned_integral type_, dim_t dimension_, std::integral arg_type_>
-    [[nodiscard]] constexpr auto Make_MultiDimParam(const std::vector<arg_type_>& vec)
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<arg_type_>& vec)
     {
         return TMultiDimParam<type_, dimension_>(vec);
     }
     
     template <dim_t dimension_, std::integral arg_type_>
-    [[nodiscard]] constexpr auto Make_MultiDimParam(const std::vector<arg_type_>& vec)
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<arg_type_>& vec)
     {
         return TMultiDimParam<std::make_unsigned_t<arg_type_>, dimension_>(vec);
     }
@@ -249,34 +249,35 @@ namespace sib {
     }
 
     /*
-    template <std::unsigned_integral type_, dim_t dimension_, typename alloc_ = std::allocator<type_>, std::integral arg_type_>
-    [[nodiscard]] constexpr auto MakeMatrix(const std::vector<arg_type_>& vec)
-    {
-        return TMatrixND<type_, dimension_, alloc_>(vec);
-    }
-    */
-
     template <typename type_, dim_t dimension_, typename alloc_ = std::allocator<type_>, std::integral arg_type_>
-    [[nodiscard]] auto __MakeMatrixByVector(const std::vector<arg_type_>& vec)
+    [[nodiscard]] static auto __MakeMatrixByVector(const std::vector<arg_type_>& vec)
     {
         return std::unique_ptr<TMatrix<type_, alloc_>> { new TMatrixND<type_, dimension_, alloc_>(vec) };
     }
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_, dim_t... dimensions_>
-    [[nodiscard]] constexpr auto __InitMatrixMakersByVector(std::integer_sequence<dim_t, dimensions_...>)
+    [[nodiscard]] static constexpr auto __InitMatrixMakersByVector(std::integer_sequence<dim_t, dimensions_...>)
     {
-        return std::array { &__MakeMatrixByVector<type_, dimensions_, alloc_, arg_type_>... };
+        return std::array{ &__MakeMatrixByVector<type_, dimensions_, alloc_, arg_type_>... };
     }
+    */
+
+    template <typename type_, typename alloc_, std::integral arg_type_>
+    using TMakerMatrixByVector = std::unique_ptr<TMatrix<type_, alloc_>>(*)(const std::vector<arg_type_>&);
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_ = typename alloc_::size_type>
-    constexpr auto __MatrixMakersByVector{
-        __InitMatrixMakersByVector<type_, alloc_, arg_type_>(std::make_integer_sequence<dim_t, std::numeric_limits<dim_t>::max()>())
-    };
+    extern std::array< TMakerMatrixByVector<type_, alloc_, arg_type_>, std::numeric_limits<dim_t>::max() > MatrixMakersByVector;
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_>
-    [[nodiscard]] constexpr auto MakeMatrix(const std::vector<arg_type_>& vec)
+    [[nodiscard]] static auto MakeMatrix(const std::vector<arg_type_>& vec)
     {
-        return (*__MatrixMakersByVector<type_, alloc_, arg_type_>[vec.size()])(vec);
+        return (*MatrixMakersByVector<type_, alloc_, arg_type_>[vec.size()])(vec);
+    }
+
+    template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_>
+    [[nodiscard]] static auto MakeMatrix(const std::vector<arg_type_>& vec, const dim_t dimension)
+    {
+        return (*MatrixMakersByVector<type_, alloc_, arg_type_>[dimension])(vec);
     }
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral size_type_, dim_t dimension_>
