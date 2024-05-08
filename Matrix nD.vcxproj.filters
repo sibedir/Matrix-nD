@@ -24,9 +24,6 @@
     <ClCompile Include="sib_utilities.h">
       <Filter>Файлы заголовков</Filter>
     </ClCompile>
-    <ClCompile Include="sib_matrix_nD.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sib_matrix_nD.h">

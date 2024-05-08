@@ -74,10 +74,10 @@ int main()
 			auto M4p = &M4;
 			auto Mp = &M;
 		}{
-			constexpr auto s0 = QQQ();
-			constexpr auto s1 = sib::TMatrixND<int, 3>(4, 5, 3).Data().size();
+			//constexpr auto s0 = QQQ();
+			//constexpr auto s1 = sib::TMatrixND<int, 3>(4, 5, 3).Data().size();
 			constexpr int arr[]{ 3, 5, 2 };
-			constexpr auto s2 = std::move(sib::MakeMatrix<int>(arr)).Data().size();
+			//constexpr auto s2 = std::move(sib::MakeMatrix<int>(arr)).Data().size();
 		}{
 			auto M = sib::MakeMatrix<short>(1, 2, 4, 6, 2, 2);
 			sib::TMatrix<short>& Mref = M;
@@ -102,7 +102,7 @@ int main()
 			//auto DP = sib::TDimParam<unsigned, 3>{ 2, -3, i };
 			auto M = sib::TMatrixND<int, 3>( 2, 3, i );
 			auto DP = sib::TMultiDimParam<unsigned, 3>( 2, 3, i );
-		}{
+		}{/*
 			auto vec1 = std::vector{ 2, 3, 4 };
 			auto DP0 = sib::MakeMultiDimParam<3>(vec1);
 			auto DP1 = sib::TMultiDimParam<unsigned, 3>(vec1);
@@ -115,10 +115,15 @@ int main()
 			auto M3 = sib::TMatrixND<char, 3>(vec1);
 			auto M4 = sib::MakeMatrix<char>(vec1);
 			auto M5 = sib::MakeMatrix<char>(vec1, 2);
-		}{
+		}{*/
 			auto vec = std::vector{ 2, 3, 4 };
 			auto M = sib::MakeMatrix<int>(vec);
 			std::cout << M->Data().size() << std::endl;
+			std::cout << int(M->Dimension()) << std::endl;
+			for (size_t d = 0; d < M->Dimension(); ++d) {
+				std::cout << M->Sizes()[d] << " ";
+			}
+			std::cout << std::endl;
 		}
 	}
 	catch (const std::exception& exc) {

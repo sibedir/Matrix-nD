@@ -10,6 +10,11 @@
 
 namespace sib {
 
+    using dim_t = unsigned char;
+
+    template <typename type_, dim_t dimension_, typename alloc_> class TMatrixND;
+    template <std::unsigned_integral type_, dim_t dimension_> class TMultiDimParam;
+
     #ifdef SIB_DEBUG_MATRIX_FULL
         #define SIB_DEBUG_DIMENSION_TOTAL_OVERFLOW
     #endif
@@ -24,13 +29,23 @@ namespace sib {
         #endif
     }
 
+    // DIMENSION PARAMETERS INTERFACE ******************************************************************************************
+    template <std::unsigned_integral type_>
+    class IMultiDimParam {
+    public:
+
+        using value_type = type_;
+
+        virtual ~IMultiDimParam() = default;
+
+        inline virtual value_type operator[] (dim_t index) const = 0;
+
+    };
+    
     // DIMENSION PARAMETERS ****************************************************************************************************
-    using dim_t = unsigned char;
-
-    template <std::unsigned_integral type_> class TDimParamBase {};
-
     template <std::unsigned_integral type_, dim_t dimension_>
-    class TMultiDimParam : TDimParamBase<type_> {
+    class TMultiDimParam
+        : public IMultiDimParam<type_>{
     public:
 
         static constexpr dim_t dimension = dimension_;
@@ -98,6 +113,8 @@ namespace sib {
             : mydata(InitData(vec.data(), vec.size()))
         {}
 
+        virtual ~TMultiDimParam() = default;
+
     protected:
 
         constexpr value_type Total() const
@@ -117,8 +134,8 @@ namespace sib {
 
     public:
         
-        constexpr TData const & Data() const & noexcept { return           mydata ; }
-        constexpr TData      && Data()      && noexcept { return std::move(mydata); }
+        inline constexpr TData const & Data() const & noexcept { return           mydata ; }
+        inline constexpr TData      && Data()      && noexcept { return std::move(mydata); }
 
         template <typename other_type_>
         constexpr bool operator==(const TMultiDimParam<other_type_, dimension>& other) const
@@ -130,6 +147,11 @@ namespace sib {
             }
             return true;
         }
+
+        inline value_type operator[] (dim_t index) const override
+        {
+            return mydata[index];
+        };
 
     };
 
@@ -163,18 +185,58 @@ namespace sib {
         template <typename... Ts>
         constexpr TMatrix(Ts&&... args) : mydata(args...) {};
 
+    private:
+
+        template <std::integral arg_type_, dim_t dimension_>
+        [[nodiscard]] static auto Make(const std::vector<arg_type_>& vec)
+        {
+            return std::unique_ptr<TMatrix<type_, alloc_>> { new TMatrixND<type_, dimension_, alloc_>(vec) };
+        }
+
+        template <std::integral arg_type_, dim_t... dim_pack_>
+        [[nodiscard]] static constexpr auto InitMakersArray(std::integer_sequence<dim_t, dim_pack_...>)
+        {
+            return std::array{ &Make<arg_type_, dim_pack_>..., &Make<arg_type_, std::numeric_limits<dim_t>::max()> };
+        }
+
+        template <std::integral arg_type_>
+        static constexpr auto MakersArray =
+            InitMakersArray<arg_type_>(std::make_integer_sequence<dim_t, std::numeric_limits<dim_t>::max()>());
+
     public:
+
+        template <std::integral arg_type_>
+        [[nodiscard]] static auto New(const std::vector<arg_type_>& vec)
+        {
+            return (*MakersArray<arg_type_>[vec.size()])(vec);
+        }
+
+        template <std::integral arg_type_>
+        [[nodiscard]] static auto New(const std::vector<arg_type_>& vec, const dim_t dimension)
+        {
+            return (*MakersArray<arg_type_>[dimension])(vec);
+        }
+
+        template <typename type_, typename alloc_, std::integral arg_type_>
+        friend constexpr auto MakeMatrix(const std::vector<arg_type_>& vec);
+
+        template <typename type_, typename alloc_, std::integral arg_type_>
+        friend constexpr auto MakeMatrix(const std::vector<arg_type_>& vec, const dim_t dimension);
 
         virtual ~TMatrix() = default;
 
-        constexpr TData const & Data() const & noexcept { return           mydata ; }
-        constexpr TData      && Data()      && noexcept { return std::move(mydata); }
+        virtual constexpr dim_t Dimension() const noexcept = 0;
+
+        virtual IMultiDimParam<size_type> const & Sizes() const noexcept = 0;
+
+        inline constexpr TData const & Data() const & noexcept { return           mydata ; }
+        inline constexpr TData      && Data()      && noexcept { return std::move(mydata); }
 
     };
 
     // MATRIX nD **********************************************************************************************************
     template <typename type_, dim_t dimension_, typename alloc_ = std::allocator<type_>>
-    class TMatrixND 
+    class TMatrixND final
         : public TMultiDimParam<typename TMatrix<type_, alloc_>::size_type, dimension_>
         , public TMatrix<type_, alloc_> {
     public:
@@ -208,7 +270,7 @@ namespace sib {
             , TMatrix(TSizes::Total())
         {}
 
-        constexpr TMatrixND(const TMultiDimParam<size_type, dimension>& dimparam)
+        constexpr TMatrixND(const TSizes& dimparam)
             : TSizes(dimparam)
             , TMatrix(TSizes::Total())
         {}
@@ -217,8 +279,18 @@ namespace sib {
 
     public:
         
-        constexpr TData const & Data() const & noexcept { return             TMatrix         ::Data(); }
-        constexpr TData      && Data()      && noexcept { return static_cast<TMatrix&&>(*this).Data(); }
+        constexpr dim_t Dimension() const noexcept override
+        {
+            return dimension;
+        }
+
+        IMultiDimParam<size_type> const & Sizes() const noexcept override
+        {
+            return *this;
+        }
+
+        inline constexpr TData const & Data() const & noexcept { return             TMatrix         ::Data(); }
+        inline constexpr TData      && Data()      && noexcept { return static_cast<TMatrix&&>(*this).Data(); }
 
     };
 
@@ -248,36 +320,16 @@ namespace sib {
         return TMatrixND<type_, dimension_, alloc_>(arr);
     }
 
-    /*
-    template <typename type_, dim_t dimension_, typename alloc_ = std::allocator<type_>, std::integral arg_type_>
-    [[nodiscard]] static auto __MakeMatrixByVector(const std::vector<arg_type_>& vec)
-    {
-        return std::unique_ptr<TMatrix<type_, alloc_>> { new TMatrixND<type_, dimension_, alloc_>(vec) };
-    }
-
-    template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_, dim_t... dimensions_>
-    [[nodiscard]] static constexpr auto __InitMatrixMakersByVector(std::integer_sequence<dim_t, dimensions_...>)
-    {
-        return std::array{ &__MakeMatrixByVector<type_, dimensions_, alloc_, arg_type_>... };
-    }
-    */
-
-    template <typename type_, typename alloc_, std::integral arg_type_>
-    using TMakerMatrixByVector = std::unique_ptr<TMatrix<type_, alloc_>>(*)(const std::vector<arg_type_>&);
-
-    template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_ = typename alloc_::size_type>
-    extern std::array< TMakerMatrixByVector<type_, alloc_, arg_type_>, std::numeric_limits<dim_t>::max() > MatrixMakersByVector;
-
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_>
-    [[nodiscard]] static auto MakeMatrix(const std::vector<arg_type_>& vec)
+    [[nodiscard]] constexpr auto MakeMatrix(const std::vector<arg_type_>& vec)
     {
-        return (*MatrixMakersByVector<type_, alloc_, arg_type_>[vec.size()])(vec);
+        return TMatrix<type_, alloc_>::New(vec);
     }
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral arg_type_>
-    [[nodiscard]] static auto MakeMatrix(const std::vector<arg_type_>& vec, const dim_t dimension)
+    [[nodiscard]] constexpr auto MakeMatrix(const std::vector<arg_type_>& vec, const dim_t dimension)
     {
-        return (*MatrixMakersByVector<type_, alloc_, arg_type_>[dimension])(vec);
+        return TMatrix<type_, alloc_>::New(vec, dimension);
     }
 
     template <typename type_, typename alloc_ = std::allocator<type_>, std::integral size_type_, dim_t dimension_>
