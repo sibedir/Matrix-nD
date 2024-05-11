@@ -26,6 +26,7 @@ namespace sib {
         }
 
         std::string _ExceptionInfo(const std::exception& exc, const bool line_break, std::string& tab) {
+#ifdef _CPPRTTI
             auto result = tab + typeid(exc).name() + ": \"" + exc.what() + "\"";
 
             try {
@@ -42,6 +43,9 @@ namespace sib {
             }
 
             return result;
+#else
+            return tab + "exception: \"" + exc.what() + "\"";
+#endif
         }
 
         std::string _NestedExceptionInfo(const std::nested_exception& exc, const bool line_break, std::string& tab) {
@@ -57,14 +61,14 @@ namespace sib {
                 result += _LineBreakIf(line_break) + _NestedExceptionInfo(ne, line_break, _NextTab(line_break, tab));
             }
             catch (...) {
-                result += _LineBreakIf(line_break) + _NextTab(line_break, tab) + "{some exception}";
+                result += _LineBreakIf(line_break) + _NextTab(line_break, tab) + "{unknown exception}";
             }
 
             return result;
         }
 
         std::string Info(const std::exception& exc) {
-            return exception::_ExceptionInfo(exc);
+            return exception::_ExceptionInfo(exc, true);
         }
 
         std::string exception::AsString(const std::exception& exc) {
