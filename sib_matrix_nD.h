@@ -16,19 +16,19 @@ namespace sib {
     template <typename type_, dim_t dimension_, typename alloc_> class TMatrixND;
 
     #ifdef SIB_DEBUG_MATRIX_FULL
-        #define SIB_DEBUG_DIMENSION_TOTAL_OVERFLOW
-        #define SIB_DEBUG_DIMENSION_DYNAMIC_CHECK
+        #define SIB_DEBUG_MATRIX_DIMENSION_DYNAMIC_CHECK
+        #define SIB_DEBUG_MATRIX_TOTAL_SIZE_OVERFLOW
     #endif
 
     constexpr bool __may_be_hit_by_dim_total_overflow =
-        #ifdef SIB_DEBUG_DIMENSION_TOTAL_OVERFLOW
+        #ifdef SIB_DEBUG_MATRIX_TOTAL_SIZE_OVERFLOW
             true;
         #else
             false;
         #endif
     
     constexpr bool __may_be_hit_by_dim_dyn_check =
-        #ifdef SIB_DEBUG_DIMENSION_DYNAMIC_CHECK
+        #ifdef SIB_DEBUG_MATRIX_DIMENSION_DYNAMIC_CHECK
             true;
         #else
             false;
@@ -45,34 +45,33 @@ namespace sib {
 
     private:
 
-        template <std::integral arg_type_, dim_t dimension_>
-        [[nodiscard]] static constexpr auto Make(const std::vector<arg_type_>& vec)
+        template <dim_t dimension_, std::unsigned_integral type_>
+        [[nodiscard]] static constexpr auto Make(const std::vector<type_>& vec)
         {
-            return std::unique_ptr<IMultiDimParam> { new TMultiDimParam<dimension_, arg_type_>(vec) };
+            return std::unique_ptr<IMultiDimParam> { new TMultiDimParam<dimension_, type_>(vec) };
         }
 
-        template <std::integral arg_type_, dim_t... dim_pack_>
+        template <std::unsigned_integral type_, dim_t... dim_pack_>
         [[nodiscard]] static constexpr auto InitMakersArray(std::integer_sequence<dim_t, dim_pack_...>)
         {
-            return std::array{ &Make<arg_type_, dim_pack_>..., &Make<arg_type_, std::numeric_limits<dim_t>::max()> };
+            return std::array{ &Make<dim_pack_, type_>..., &Make<std::numeric_limits<dim_t>::max(), type_> };
         }
 
-        template <std::integral arg_type_>
+        template <std::unsigned_integral type_>
         static constexpr auto MakersArray =
-            InitMakersArray<arg_type_>(std::make_integer_sequence<dim_t, std::numeric_limits<dim_t>::max()>());
+            InitMakersArray<type_>(std::make_integer_sequence<dim_t, std::numeric_limits<dim_t>::max()>());
 
     public:
 
         template <std::integral arg_type_>
-        [[nodiscard]] static auto New(const std::vector<arg_type_>& vec)
+        [[nodiscard]] static auto New(const std::vector<value_type>& vec)
         {
-            return (*MakersArray<arg_type_>[vec.size()])(vec);
+            return (*MakersArray<value_type>[vec.size()])(vec);
         }
 
-        template <std::integral arg_type_>
-        [[nodiscard]] static auto New(const std::vector<arg_type_>& vec, const dim_t dimension)
+        [[nodiscard]] static auto New(const std::vector<value_type>& vec, const dim_t dimension)
         {
-            return (*MakersArray<arg_type_>[dimension])(vec);
+            return (*MakersArray<value_type>[dimension])(vec);
         }
 
     protected:
@@ -116,19 +115,19 @@ namespace sib {
 
         template <std::integral arg_type_, size_t... idx_>
             requires (sizeof...(idx_) == dimension)
-        [[nodiscard]] constexpr TData InitData(arg_type_* arr, std::index_sequence<idx_...>)
+        [[nodiscard]] static constexpr TData InitData(arg_type_* arr, std::index_sequence<idx_...>)
         {
             return { integral::cast<value_type>(arr[idx_])... };
         }
 
         template <std::integral arg_type_>
-        [[nodiscard]] constexpr TData InitData(arg_type_* arr)
+        [[nodiscard]] static constexpr TData InitData(arg_type_* arr)
         {
             return InitData(arr, std::make_index_sequence<dimension>{});
         }
 
         template <std::integral arg_type_>
-        [[nodiscard]] constexpr TData InitData(const arg_type_* arr, size_t arr_size)
+        [[nodiscard]] static constexpr TData InitData(const arg_type_* arr, size_t arr_size)
         {
             if constexpr (__may_be_hit_by_dim_dyn_check) {
                 if (arr_size < dimension)
@@ -211,6 +210,7 @@ namespace sib {
 
     };
 
+    // Ïake from package...
     template <dim_t left_dim_, typename left_type_, dim_t right_dim_, typename right_type_>
     constexpr bool operator== (const TMultiDimParam<left_dim_, left_type_>& left, const TMultiDimParam<right_dim_, right_type_>& right)
     {
@@ -223,10 +223,7 @@ namespace sib {
         return true;
     }
 
-    template <typename seed_type_, dim_t dimension_, typename alloc_ = std::allocator<seed_type_>>
-        requires (std::is_same_v<seed_type_, typename alloc_::value_type>)
-    using TDimParam—onductor = TMultiDimParam<dimension_, typename alloc_::size_type>;
-
+    // Ïake from package...
     template <std::integral... args_type_>
         requires (sizeof...(args_type_) <= std::numeric_limits<dim_t>::max())
     [[nodiscard]] constexpr auto MakeMultiDimParam(const args_type_&... args)
@@ -234,28 +231,56 @@ namespace sib {
         return TMultiDimParam<sizeof...(args_type_), std::make_unsigned_t<std::common_type_t<args_type_...>>>(args...);
     }
 
-    template <dim_t dimension_, std::integral arg_type_>
-    [[nodiscard]] constexpr auto MakeMultiDimParam(const arg_type_(&arr)[dimension_])
+    template <std::unsigned_integral param_type_, std::integral... args_type_>
+        requires (sizeof...(args_type_) <= std::numeric_limits<dim_t>::max())
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const args_type_&... args)
     {
-        return TMultiDimParam<dimension_, std::make_unsigned_t<arg_type_>>(arr);
+        return TMultiDimParam<sizeof...(args_type_), param_type_>(args...);
     }
 
-    template <std::integral arg_type_, size_t arr_size_>
-    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::array<arg_type_, arr_size_>& arr)
+    // Ïake from arr[size]
+    template <std::integral arr_type_, dim_t arr_size_>
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const arr_type_(&arr)[arr_size_])
     {
-        return TMultiDimParam<arr_size_, std::make_unsigned_t<arg_type_>>(arr);
+        return TMultiDimParam<arr_size_, std::make_unsigned_t<arr_type_>>(arr);
     }
 
-    template <dim_t dimension_, std::unsigned_integral type_, std::integral arg_type_>
-    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<arg_type_>& vec)
+    template <std::unsigned_integral param_type_, std::integral arg_type_, dim_t arr_size_>
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const arg_type_(&arr)[arr_size_])
     {
-        return TMultiDimParam<dimension_, type_>(vec);
+        return TMultiDimParam<arr_size_, param_type_>(arr);
     }
-    
-    template <dim_t dimension_, std::integral arg_type_>
+
+    // Ïake from std::array
+    template <std::integral arr_type_, size_t arr_size_>
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::array<arr_type_, arr_size_>& arr)
+    {
+        return TMultiDimParam<arr_size_, std::make_unsigned_t<arr_type_>>(arr);
+    }
+
+    template <std::unsigned_integral param_type_, std::integral arr_type_, size_t arr_size_>
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::array<arr_type_, arr_size_>& arr)
+    {
+        return TMultiDimParam<arr_size_, param_type_>(arr);
+    }
+
+    // Ïake from std::vector
+    template <std::integral vec_type_>
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<vec_type_>& vec)
+    {
+        return IMultiDimParam<type_>::New(vec);
+    }
+
+    template <std::unsigned_integral param_type_, std::integral arg_type_>
     [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<arg_type_>& vec)
     {
-        return TMultiDimParam<dimension_, std::make_unsigned_t<arg_type_>>(vec);
+        return IMultiDimParam<param_type_>::New(vec);
+    }
+
+    template <std::integral arg_type_, std::unsigned_integral type_ = std::make_unsigned_t<arg_type_>>
+    [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<arg_type_>& vec, const dim_t dimension)
+    {
+        return IMultiDimParam<type_>::New(vec, dimension);
     }
 
     // MATRIX INTERFACE ***************************************************************************************************

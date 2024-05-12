@@ -144,6 +144,15 @@ int main()
 				std::cout << M->Sizes()[d] << " ";
 			}
 			std::cout << std::endl;
+		}{
+			auto vec = std::vector{ 2, 3, 4, 7, 3, 3 };
+			auto M = sib::MakeMultiDimParam(vec, 5);
+			std::cout << M->Data().size() << std::endl;
+			std::cout << static_cast<int>(M->Dimension()) << std::endl;
+			for (size_t d = 0; d < M->Dimension(); ++d) {
+				std::cout << M->Sizes()[d] << " ";
+			}
+			std::cout << std::endl;
 		}
 	}
 	catch (const std::exception& exc) {
