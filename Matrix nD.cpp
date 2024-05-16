@@ -136,21 +136,24 @@ int main()
 			auto M111 = sib::MakeMatrix<float>(vec1);
 			auto M222 = sib::MakeMatrix<double>(vec1);
 		}*/{
+			std::cout << "----------------------------------------\n";
 			auto vec = std::vector{ 2, 3, 4, 7, 3, 3 };
-			auto M = sib::MakeMatrix<int>(vec, 5);
+			auto M = sib::MakeMatrix<int>(vec);
 			std::cout << M->Data().size() << std::endl;
 			std::cout << static_cast<int>(M->Dimension()) << std::endl;
-			for (size_t d = 0; d < M->Dimension(); ++d) {
+			for (sib::dim_t d = 0; d < M->Dimension(); ++d) {
 				std::cout << M->Sizes()[d] << " ";
 			}
 			std::cout << std::endl;
 		}{
+			std::cout << "----------------------------------------\n";
 			auto vec = std::vector{ 2, 3, 4, 7, 3, 3 };
-			auto M = sib::MakeMultiDimParam(vec, 5);
-			std::cout << M->Data().size() << std::endl;
-			std::cout << static_cast<int>(M->Dimension()) << std::endl;
-			for (size_t d = 0; d < M->Dimension(); ++d) {
-				std::cout << M->Sizes()[d] << " ";
+			auto M1 = sib::MakeMultiDimParam<size_t>(vec);
+			auto M2 = sib::MakeMultiDimParam(vec);
+			std::cout << M1->Total() << std::endl;
+			std::cout << static_cast<int>(M1->Dimension()) << std::endl;
+			for (sib::dim_t d = 0; d < M1->Dimension(); ++d) {
+				std::cout << (*M1)[d] << " ";
 			}
 			std::cout << std::endl;
 		}
@@ -158,7 +161,7 @@ int main()
 	catch (const std::exception& exc) {
 		std::cerr << sib::exception::Info(exc) << std::endl;
 	}
-	
+
 	goto THE_END;
 
 	{
@@ -180,6 +183,11 @@ int main()
 			std::cerr << sib::exception::Info(exc) << std::endl;
 		}
 	}
+
+
+	auto gdsh = std::declval<std::decay_t<int>>();
+		
+	auto asdf = int{};
 	
 THE_END:
 	std::cout << std::endl << std::endl;
