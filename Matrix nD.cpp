@@ -184,11 +184,6 @@ int main()
 		}
 	}
 
-
-	auto gdsh = std::declval<std::decay_t<int>>();
-		
-	auto asdf = int{};
-	
 THE_END:
 	std::cout << std::endl << std::endl;
 	std::cout << "  - THE END -  " << std::endl;
