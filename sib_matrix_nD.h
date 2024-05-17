@@ -72,7 +72,7 @@ namespace sib {
         template<std::integral arg_type_>
         [[nodiscard]] static constexpr auto New(const std::vector<arg_type_>& vec, const dim_t dimension)
         {
-            return (*MakersArray<std::make_unsigned_t<arg_type_>>[dimension])(vec);
+            return (*MakersArray<arg_type_>[dimension])(vec);
         }
 
         virtual constexpr value_type Total() const noexcept(!__may_be_hit_by_dim_total_overflow) = 0;
@@ -262,10 +262,10 @@ namespace sib {
     }
 
     // ìake from std::vector
-    template <std::integral arg_type_>
+    template <std::integral arg_type_, std::unsigned_integral param_type_ = std::make_unsigned_t<arg_type_>>
     [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<arg_type_>& vec)
     {
-        return IMultiDimParam<std::make_unsigned_t<arg_type_>>::New(vec);
+        return IMultiDimParam<param_type_>::New(vec);
     }
 
     template <std::unsigned_integral param_type_, std::integral arg_type_>
@@ -274,10 +274,10 @@ namespace sib {
         return IMultiDimParam<param_type_>::New(vec);
     }
 
-    template <std::integral arg_type_>
+    template <std::integral arg_type_, std::unsigned_integral param_type_ = std::make_unsigned_t<arg_type_>>
     [[nodiscard]] constexpr auto MakeMultiDimParam(const std::vector<arg_type_>& vec, const dim_t dimension)
     {
-        return IMultiDimParam<std::make_unsigned_t<arg_type_>>::New(vec, dimension);
+        return IMultiDimParam<param_type_>::New(vec, dimension);
     }
 
     template <std::unsigned_integral param_type_, std::integral arg_type_>

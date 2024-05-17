@@ -138,7 +138,7 @@ int main()
 		}*/{
 			std::cout << "----------------------------------------\n";
 			auto vec = std::vector{ 2, 3, 4, 7, 3, 3 };
-			auto M = sib::MakeMatrix<int>(vec);
+			auto M = sib::MakeMatrix<int>(vec, 5);
 			std::cout << M->Data().size() << std::endl;
 			std::cout << static_cast<int>(M->Dimension()) << std::endl;
 			for (sib::dim_t d = 0; d < M->Dimension(); ++d) {
@@ -148,12 +148,16 @@ int main()
 		}{
 			std::cout << "----------------------------------------\n";
 			auto vec = std::vector{ 2, 3, 4, 7, 3, 3 };
-			auto M1 = sib::MakeMultiDimParam<size_t>(vec);
-			auto M2 = sib::MakeMultiDimParam(vec);
-			std::cout << M1->Total() << std::endl;
-			std::cout << static_cast<int>(M1->Dimension()) << std::endl;
-			for (sib::dim_t d = 0; d < M1->Dimension(); ++d) {
-				std::cout << (*M1)[d] << " ";
+			auto M1 = sib::MakeMultiDimParam<size_t>(vec, 5);
+			auto M2 = sib::MakeMultiDimParam(vec, 5);
+			auto M3 = sib::MakeMultiDimParam<size_t>(vec);
+			auto M4 = sib::MakeMultiDimParam(vec);
+
+			auto& M = M1;
+			std::cout << M->Total() << std::endl;
+			std::cout << static_cast<int>(M->Dimension()) << std::endl;
+			for (sib::dim_t d = 0; d < M->Dimension(); ++d) {
+				std::cout << (*M)[d] << " ";
 			}
 			std::cout << std::endl;
 		}
